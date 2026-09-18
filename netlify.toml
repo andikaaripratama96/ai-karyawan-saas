@@ -1,0 +1,3 @@
+[context.production.environment]
+  NEXT_PUBLIC_SUPABASE_URL = "https://ajogenjwhgxqmkqepvyz.supabase.co"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2dlbmp3aGd4cW1rcWVwdnl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NTYwNzMsImV4cCI6MjEwNTEzMjA3M30.bBmd5nrBiVIIoFJMj-0ctxH6dVv8qO0f-4FJJtK1OxQ"
