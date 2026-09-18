@@ -1,9 +1,9 @@
 import { buildMockResult } from "@/utils/mockResult";
 
 const GEMINI_MODELS = {
-  "content-creator": "gemini-2.0-flash",
-  "admin-stok": "gemini-2.0-flash",
-  "business-analyst": "gemini-2.0-flash",
+  "content-creator": ["gemini-flash-lite-latest", "gemini-flash-latest"],
+  "admin-stok": ["gemini-flash-lite-latest", "gemini-flash-latest"],
+  "business-analyst": ["gemini-flash-lite-latest", "gemini-flash-latest"],
 };
 
 const SYSTEM_PROMPTS = {
@@ -47,33 +47,42 @@ export async function runAiTask({ employeeId, title, description = "" }) {
     return { usedMock: true, result: buildMockResult(employeeId, title, 0, description) };
   }
 
-  const model = GEMINI_MODELS[employeeId] ?? "gemini-2.0-flash";
+  const models = GEMINI_MODELS[employeeId] ?? ["gemini-flash-lite-latest", "gemini-flash-latest"];
   const systemPrompt = SYSTEM_PROMPTS[employeeId] ?? SYSTEM_PROMPTS["content-creator"];
   const prompt = systemPrompt.replace("{task}", `${title}\nDeskripsi: ${description}`);
+  let lastErr;
 
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
-        }),
-      },
-    );
-    if (!res.ok) throw new Error(`Gemini ${res.status}`);
-    const data = await res.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-    const parsed = parseModelOutput(text);
-    if (!parsed) throw new Error("Format jawaban AI tidak valid");
-    return { usedMock: false, result: parsed };
-  } catch (err) {
-    return {
-      usedMock: true,
-      error: err instanceof Error ? err.message : String(err),
-      result: buildMockResult(employeeId, title, 0, description),
-    };
+  for (const model of models) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+          }),
+          signal: controller.signal,
+        },
+      );
+      clearTimeout(timeoutId);
+      if (!res.ok) throw new Error(`Gemini ${res.status}`);
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+      const parsed = parseModelOutput(text);
+      if (!parsed) throw new Error("Format jawaban AI tidak valid");
+      return { usedMock: false, result: parsed };
+    } catch (err) {
+      lastErr = err instanceof Error ? err.message : String(err);
+    }
   }
+
+  return {
+    usedMock: true,
+    error: lastErr,
+    result: buildMockResult(employeeId, title, 0, description),
+  };
 }

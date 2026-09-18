@@ -117,19 +117,44 @@ export default function Workspace() {
         setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, progress: 70 } : t)))
       }, 3500),
     )
-    timersRef.current.push(
-      setTimeout(() => {
-        const emp = employees.find((e) => e.id === employeeId)
-        setTasks((prev) =>
-          prev.map((t) =>
-            t.id === id
-              ? { ...t, status: 'selesai', progress: 100, result: buildMockResult(employeeId, title, refCount, description) }
-              : t,
-          ),
-        )
-        showToast(`✓ ${emp?.name ?? 'AI'} selesai mengerjakan "${title}". Buka halaman Tugas untuk melihat hasil.`)
-      }, 5500),
-    )
+    ;(async () => {
+      let resultData
+      let message = `✓ AI selesai mengerjakan "${title}". Buka halaman Tugas untuk melihat hasil.`
+      try {
+        const res = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ employeeId, title, description }),
+        })
+        const json = await res.json()
+        if (json.ok && json.result) {
+          resultData = { outputs: json.result.outputs, summary: json.result.summary }
+          if (json.usedMock) message = `✓ "${title}" selesai (mode demo, Gemini belum bisa dihubungi).`
+        } else {
+          throw new Error(json.error)
+        }
+      } catch {
+        resultData = buildMockResult(employeeId, title, refCount, description)
+      }
+      timersRef.current.push(
+        setTimeout(() => {
+          const emp = employees.find((e) => e.id === employeeId)
+          setTasks((prev) =>
+            prev.map((t) =>
+              t.id === id
+                ? {
+                    ...t,
+                    status: 'selesai',
+                    progress: 100,
+                    result: resultData ?? buildMockResult(employeeId, title, refCount, description),
+                  }
+                : t,
+            ),
+          )
+          showToast(message.includes('mode demo') ? message : `✓ ${emp?.name ?? 'AI'} selesai mengerjakan "${title}". Buka halaman Tugas untuk melihat hasil.`)
+        }, 5500),
+      )
+    })()
   }
 
   const handleNewTask = (payload) => {
@@ -157,20 +182,21 @@ export default function Workspace() {
       description: 'Buatkan 10 feed dan caption',
       employeeId: 'content-creator',
       category: categoryFor('content-creator'),
-      status: 'selesai',
-      progress: 100,
+      status: 'proses',
+      progress: 30,
       priority: 'sedang',
       createdAt: now,
       dueDate: now,
-      result: buildMockResult(
-        'content-creator',
-        'Buatkan 10 feed Instagram dan caption promosi',
-        refs.length,
-        'Buatkan 10 feed dan caption',
-      ),
+      result: null,
     }
     setTasks((prev) => [task, ...prev])
     setPage('tasks')
+    runTaskSimulation(
+      id,
+      'content-creator',
+      'Buatkan 10 feed Instagram dan caption promosi',
+      'Buatkan 10 feed dan caption',
+    )
     return id
   }
 
@@ -181,25 +207,50 @@ export default function Workspace() {
     updateTask(id, { status: 'diproses', progress: 45 })
     showToast('AI sedang merevisi hasil berdasarkan koreksi kamu…')
     const refCount = refs.length
-    const t = setTimeout(() => {
-      setTasks((prev) =>
-        prev.map((x) =>
-          x.id === id
-            ? {
-                ...x,
-                status: 'selesai',
-                progress: 100,
-                result: {
-                  ...buildMockResult(x.employeeId, x.title, refCount, x.description ?? ''),
-                  notes: 'Revisi terakhir oleh AI — jumlah konsep dan caption disesuaikan ulang berdasarkan koreksi kamu.',
-                },
-              }
-            : x,
-        ),
-      )
-      showToast('✓ Revisi selesai. Hasil sudah diperbarui.')
-    }, 3200)
-    timersRef.current.push(t)
+    const task = tasks.find((t) => t.id === id)
+    ;(async () => {
+      let resultData
+      try {
+        const res = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            employeeId: task?.employeeId ?? 'content-creator',
+            title: task?.title ?? '',
+            description: (task?.description ?? '') + ' — buat versi revisi dengan penyesuaian dari koreksi pengguna.',
+          }),
+        })
+        const json = await res.json()
+        if (json.ok && json.result) {
+          resultData = {
+            ...json.result,
+            notes: 'Revisi terakhir oleh AI — hasil disesuaikan ulang berdasarkan koreksi kamu.',
+          }
+        }
+      } catch {
+      }
+      const t = setTimeout(() => {
+        setTasks((prev) =>
+          prev.map((x) =>
+            x.id === id
+              ? {
+                  ...x,
+                  status: 'selesai',
+                  progress: 100,
+                  result:
+                    resultData ??
+                    (() => {
+                      const m = buildMockResult(x.employeeId, x.title, refCount, x.description ?? '')
+                      return { ...m, notes: 'Revisi terakhir oleh AI — jumlah konsep dan caption disesuaikan ulang berdasarkan koreksi kamu.' }
+                    })(),
+                }
+              : x,
+          ),
+        )
+        showToast('✓ Revisi selesai. Hasil sudah diperbarui.')
+      }, 3200)
+      timersRef.current.push(t)
+    })()
   }
 
   return (
