@@ -56,7 +56,7 @@ export default function Dashboard({ onNavigate, onNewTask, tasks, knowledge = []
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-violet-300">
-              <IconSparkles width={14} height={14} /> Workspace · Toko Aksara
+              <IconSparkles width={14} height={14} /> Workspace {userName ? `· ${userName}` : ''}
             </p>
             <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
               Selamat datang kembali, {(userName || 'Rudi').split(' ')[0]} 👋

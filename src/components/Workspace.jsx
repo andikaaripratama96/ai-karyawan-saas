@@ -51,6 +51,7 @@ export default function Workspace() {
   const [knowledge, setKnowledge] = useState([])
   const [history, setHistory] = useState([])
   const [userName, setUserName] = useState('')
+  const [userEmail, setUserEmail] = useState('')
   const [loading, setLoading] = useState(true)
   const [newTaskOpen, setNewTaskOpen] = useState(false)
   const [presetEmployee, setPresetEmployee] = useState('')
@@ -79,6 +80,7 @@ export default function Workspace() {
           return
         }
         setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || '')
+        setUserEmail(user.email || '')
         const [taskRows, knowledgeRows, historyRows] = await Promise.all([
           fetchTasks(),
           fetchKnowledge(),
@@ -325,6 +327,8 @@ export default function Workspace() {
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         onLogout={handleLogout}
+        userName={userName}
+        userEmail={userEmail}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -332,6 +336,8 @@ export default function Workspace() {
           currentTitle={pageTitles[page]}
           onOpenSidebar={() => setSidebarOpen(true)}
           onNewTask={() => openNewTask()}
+          userName={userName}
+          userEmail={userEmail}
         />
 
         <main className="flex-1 overflow-y-auto">
@@ -374,7 +380,7 @@ export default function Workspace() {
             {page === 'history' && (
               <History history={history} tasks={tasks} />
             )}
-            {page === 'settings' && <Settings />}
+            {page === 'settings' && <Settings userName={userName} userEmail={userEmail} />}
           </div>
         </main>
       </div>

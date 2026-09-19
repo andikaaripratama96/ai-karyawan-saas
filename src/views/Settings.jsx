@@ -24,8 +24,8 @@ function Toggle({ checked, onChange }) {
   )
 }
 
-export default function Settings() {
-  const [profile, setProfile] = useState({ name: 'Rudi Aksara', email: 'rudi@tokoaksara.com', company: 'Toko Aksara' })
+export default function Settings({ userName = '', userEmail = '' }) {
+  const [profile, setProfile] = useState({ name: userName, email: userEmail, company: '' })
   const [prefs, setPrefs] = useState({ language: 'id', timezone: 'Asia/Jakarta' })
   const [notifs, setNotifs] = useState({
     taskDone: true,

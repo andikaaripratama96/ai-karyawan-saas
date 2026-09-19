@@ -1,6 +1,7 @@
 import { IconBell, IconMenu, IconPlus, IconSearch } from './icons'
 
-export default function Header({ currentTitle, onOpenSidebar, onNewTask }) {
+export default function Header({ currentTitle, onOpenSidebar, onNewTask, userName = '', userEmail = '' }) {
+  const initials = (userName.split(' ').map((w) => w[0]).slice(0, 2).join('') || userEmail[0] || 'A').toUpperCase()
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/90 px-4 backdrop-blur-md sm:px-6">
       <button
@@ -40,10 +41,10 @@ export default function Header({ currentTitle, onOpenSidebar, onNewTask }) {
         </button>
         <button className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 transition hover:bg-slate-50 sm:flex">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 text-xs font-bold text-white">
-            RA
+            {initials}
           </div>
           <span className="hidden pr-1 text-left xl:block">
-            <span className="block text-[13px] font-semibold leading-tight text-slate-800">Rudi Aksara</span>
+            <span className="block max-w-[140px] truncate text-[13px] font-semibold leading-tight text-slate-800">{userName}</span>
             <span className="block text-[11px] text-slate-500">Workspace Admin</span>
           </span>
         </button>

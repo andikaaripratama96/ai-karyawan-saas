@@ -9,7 +9,8 @@ const navItems = [
   { id: 'settings', label: 'Pengaturan', icon: IconSettings },
 ]
 
-export default function Sidebar({ currentPage, onNavigate, open, onClose, onLogout }) {
+export default function Sidebar({ currentPage, onNavigate, open, onClose, onLogout, userName = '', userEmail = '' }) {
+  const initials = (userName.split(' ').map((w) => w[0]).slice(0, 2).join('') || userEmail[0] || 'A').toUpperCase()
   return (
     <>
       {open && (
@@ -93,11 +94,11 @@ export default function Sidebar({ currentPage, onNavigate, open, onClose, onLogo
           </div>
           <div className="mt-4 flex items-center gap-3 rounded-xl px-2 py-2">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-600 to-slate-700 text-xs font-bold text-white">
-              RA
+              {initials}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-white">Rudi Aksara</p>
-              <p className="truncate text-xs text-slate-500">Founder · Toko Aksara</p>
+              <p className="truncate text-sm font-medium text-white">{userName}</p>
+              <p className="truncate text-xs text-slate-500">{userEmail}</p>
             </div>
             <button
               onClick={onLogout}
