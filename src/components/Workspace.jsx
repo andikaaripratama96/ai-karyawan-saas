@@ -9,11 +9,22 @@ import Tasks from '../views/Tasks'
 import Knowledge from '../views/Knowledge'
 import History from '../views/History'
 import Settings from '../views/Settings'
-import { employees, initialTasks } from '../data/mockData'
+import { employees } from '../data/mockData'
 import { readFilesAsReferences } from '../utils/upload'
 import { buildMockResult, categoryFor } from '../utils/mockResult'
 import { IconCheck } from '../components/icons'
 import { createClient } from '../lib/supabase-client'
+import {
+  fetchTasks,
+  createTask,
+  updateTask,
+  fetchKnowledge,
+  addKnowledge,
+  removeKnowledge,
+  fetchHistory,
+  addHistory,
+  fetchUser,
+} from '../lib/supabase-data'
 
 const pageTitles = {
   dashboard: 'Dashboard',
@@ -36,24 +47,11 @@ function loadState(key, fallback) {
 export default function Workspace() {
   const [page, setPage] = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [tasks, setTasks] = useState(() => {
-    const stored = loadState('ai-karyawan-tasks', initialTasks)
-    const seedIds = new Set(initialTasks.map((t) => t.id))
-    return stored.map((t) => {
-      const staleContentResult =
-        t.employeeId === 'content-creator' && t.result && typeof t.result.outputs?.[0] === 'string'
-      if (staleContentResult) {
-        return { ...t, result: buildMockResult(t.employeeId, t.title, 0, t.description ?? '') }
-      }
-      if (t.status === 'selesai' && !t.result) {
-        return { ...t, result: buildMockResult(t.employeeId, t.title, 0, t.description ?? '') }
-      }
-      if (!seedIds.has(t.id) && (t.status === 'menunggu' || t.status === 'diproses')) {
-        return { ...t, status: 'selesai', progress: 100, result: buildMockResult(t.employeeId, t.title, 0, t.description ?? '') }
-      }
-      return t
-    })
-  })
+  const [tasks, setTasks] = useState([])
+  const [knowledge, setKnowledge] = useState([])
+  const [history, setHistory] = useState([])
+  const [userName, setUserName] = useState('')
+  const [loading, setLoading] = useState(true)
   const [newTaskOpen, setNewTaskOpen] = useState(false)
   const [presetEmployee, setPresetEmployee] = useState('')
   const [refs, setRefs] = useState(() => loadState('ai-karyawan-refs', []))
@@ -66,13 +64,37 @@ export default function Workspace() {
     } catch {}
   }, [refs])
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('ai-karyawan-tasks', JSON.stringify(tasks))
-    } catch {}
-  }, [tasks])
+  const showToast = (message) => {
+    setToast(message)
+    const t = setTimeout(() => setToast(null), 5000)
+    timersRef.current.push(t)
+  }
 
   useEffect(() => {
+    const loadData = async () => {
+      try {
+        const user = await fetchUser()
+        if (!user) {
+          window.location.href = '/login'
+          return
+        }
+        setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || '')
+        const [taskRows, knowledgeRows, historyRows] = await Promise.all([
+          fetchTasks(),
+          fetchKnowledge(),
+          fetchHistory(),
+        ])
+        setTasks(taskRows)
+        setKnowledge(knowledgeRows)
+        setHistory(historyRows)
+      } catch (err) {
+        console.error('Gagal memuat data:', err)
+        showToast('Gagal memuat data dari database.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
     const timers = timersRef.current
     return () => timers.forEach((t) => clearTimeout(t))
   }, [])
@@ -93,15 +115,14 @@ export default function Workspace() {
     window.location.href = '/login'
   }
 
-  const showToast = (message) => {
-    setToast(message)
-    const t = setTimeout(() => setToast(null), 5000)
-    timersRef.current.push(t)
-  }
-
   const openNewTask = (employeeId = '') => {
     setPresetEmployee(employeeId)
     setNewTaskOpen(true)
+  }
+
+  const applyTaskUpdate = (id, patch) => {
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)))
+    updateTask(id, patch).catch((err) => console.error(`Gagal menyimpan tugas ${id}:`, err))
   }
 
   const runTaskSimulation = (id, employeeId, title, description = '') => {
@@ -109,12 +130,12 @@ export default function Workspace() {
 
     timersRef.current.push(
       setTimeout(() => {
-        setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: 'diproses', progress: 35 } : t)))
+        applyTaskUpdate(id, { status: 'diproses', progress: 35 })
       }, 1500),
     )
     timersRef.current.push(
       setTimeout(() => {
-        setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, progress: 70 } : t)))
+        applyTaskUpdate(id, { progress: 70 })
       }, 3500),
     )
     ;(async () => {
@@ -139,72 +160,83 @@ export default function Workspace() {
       timersRef.current.push(
         setTimeout(() => {
           const emp = employees.find((e) => e.id === employeeId)
-          setTasks((prev) =>
-            prev.map((t) =>
-              t.id === id
-                ? {
-                    ...t,
-                    status: 'selesai',
-                    progress: 100,
-                    result: resultData ?? buildMockResult(employeeId, title, refCount, description),
-                  }
-                : t,
-            ),
-          )
+          applyTaskUpdate(id, {
+            status: 'selesai',
+            progress: 100,
+            result: resultData ?? buildMockResult(employeeId, title, refCount, description),
+          })
+          addHistory({
+            employeeId,
+            action: `Menyelesaikan tugas "${title}"`,
+          }).catch(() => {})
+          setHistory((prev) => [{ id: `h-${Date.now()}`, employeeId, action: `Menyelesaikan tugas "${title}"`, at: 'Baru saja' }, ...prev])
           showToast(message.includes('mode demo') ? message : `✓ ${emp?.name ?? 'AI'} selesai mengerjakan "${title}". Buka halaman Tugas untuk melihat hasil.`)
         }, 5500),
       )
     })()
   }
 
-  const handleNewTask = (payload) => {
-    const now = new Date().toISOString().slice(0, 10)
-    const id = `t-${Date.now()}`
-    const task = {
-      id,
-      ...payload,
-      status: 'menunggu',
-      category: categoryFor(payload.employeeId),
-      createdAt: now,
-      progress: 0,
+  const handleNewTask = async (payload) => {
+    try {
+      const task = await createTask({
+        title: payload.title,
+        description: payload.description,
+        employeeId: payload.employeeId,
+        priority: payload.priority,
+        category: categoryFor(payload.employeeId),
+        dueDate: payload.dueDate,
+        status: 'menunggu',
+        progress: 0,
+      })
+      setTasks((prev) => [task, ...prev])
+      addHistory({
+        employeeId: task.employeeId,
+        action: `Memulai tugas "${task.title}"`,
+      }).catch(() => {})
+      setHistory((prev) => [{ id: `h-${Date.now()}`, employeeId: task.employeeId, action: `Memulai tugas "${task.title}"`, at: 'Baru saja' }, ...prev])
+      setPage('tasks')
+      runTaskSimulation(task.id, payload.employeeId, payload.title, payload.description)
+    } catch (err) {
+      console.error('Gagal membuat tugas:', err)
+      showToast('Gagal menyimpan tugas ke database.')
     }
-    setTasks((prev) => [task, ...prev])
-    setPage('tasks')
-    runTaskSimulation(id, payload.employeeId, payload.title, payload.description)
   }
 
-  const createDemoFeed = () => {
+  const createDemoFeed = async () => {
     const now = new Date().toISOString().slice(0, 10)
-    const id = `t-${Date.now()}`
-    const task = {
-      id,
-      title: 'Buatkan 10 feed Instagram dan caption promosi (demo)',
-      description: 'Buatkan 10 feed dan caption',
-      employeeId: 'content-creator',
-      category: categoryFor('content-creator'),
-      status: 'proses',
-      progress: 30,
-      priority: 'sedang',
-      createdAt: now,
-      dueDate: now,
-      result: null,
+    try {
+      const task = await createTask({
+        title: 'Buatkan 10 feed Instagram dan caption promosi (demo)',
+        description: 'Buatkan 10 feed dan caption',
+        employeeId: 'content-creator',
+        category: categoryFor('content-creator'),
+        status: 'diproses',
+        progress: 30,
+        priority: 'sedang',
+        dueDate: now,
+      })
+      setTasks((prev) => [task, ...prev])
+      setPage('tasks')
+      runTaskSimulation(
+        task.id,
+        'content-creator',
+        'Buatkan 10 feed Instagram dan caption promosi',
+        'Buatkan 10 feed dan caption',
+      )
+      return task.id
+    } catch (err) {
+      console.error('Gagal membuat tugas demo:', err)
+      showToast('Gagal menyimpan tugas demo.')
+      return null
     }
-    setTasks((prev) => [task, ...prev])
-    setPage('tasks')
-    runTaskSimulation(
-      id,
-      'content-creator',
-      'Buatkan 10 feed Instagram dan caption promosi',
-      'Buatkan 10 feed dan caption',
-    )
-    return id
   }
 
-  const updateTask = (id, patch) =>
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)))
+  const updateTaskLocal = (id, patch) => {
+    applyTaskUpdate(id, patch)
+  }
 
   const requestRevision = (id) => {
-    updateTask(id, { status: 'diproses', progress: 45 })
+    applyTaskUpdate(id, { status: 'diproses', progress: 45 })
     showToast('AI sedang merevisi hasil berdasarkan koreksi kamu…')
     const refCount = refs.length
     const task = tasks.find((t) => t.id === id)
@@ -230,27 +262,59 @@ export default function Workspace() {
       } catch {
       }
       const t = setTimeout(() => {
-        setTasks((prev) =>
-          prev.map((x) =>
-            x.id === id
-              ? {
-                  ...x,
-                  status: 'selesai',
-                  progress: 100,
-                  result:
-                    resultData ??
-                    (() => {
-                      const m = buildMockResult(x.employeeId, x.title, refCount, x.description ?? '')
-                      return { ...m, notes: 'Revisi terakhir oleh AI — jumlah konsep dan caption disesuaikan ulang berdasarkan koreksi kamu.' }
-                    })(),
-                }
-              : x,
-          ),
-        )
+        const m = buildMockResult(task?.employeeId ?? 'content-creator', task?.title ?? '', refCount, task?.description ?? '')
+        const finalResult =
+          resultData ?? { ...m, notes: 'Revisi terakhir oleh AI — jumlah konsep dan caption disesuaikan ulang berdasarkan koreksi kamu.' }
+        applyTaskUpdate(id, { status: 'selesai', progress: 100, result: finalResult })
+        addHistory({
+          employeeId: task?.employeeId ?? 'content-creator',
+          action: `Merevisi hasil tugas "${task?.title ?? ''}"`,
+        }).catch(() => {})
+        setHistory((prev) => [{ id: `h-${Date.now()}`, employeeId: task?.employeeId ?? 'content-creator', action: `Merevisi hasil tugas "${task?.title ?? ''}"`, at: 'Baru saja' }, ...prev])
         showToast('✓ Revisi selesai. Hasil sudah diperbarui.')
       }, 3200)
       timersRef.current.push(t)
     })()
+  }
+
+  const handleUploadKnowledge = async (files) => {
+    const file = files?.[0]
+    if (!file) return
+    try {
+      await addKnowledge({
+        name: file.name,
+        fileType: file.type || file.name.split('.').pop()?.toUpperCase() || 'Dokumen',
+      })
+      const rows = await fetchKnowledge()
+      setKnowledge(rows)
+      showToast(`✓ "${file.name}" ditambahkan ke Knowledge Base.`)
+    } catch (err) {
+      console.error('Gagal menambah knowledge:', err)
+      showToast('Gagal menambah file ke Knowledge Base.')
+    }
+  }
+
+  const handleRemoveKnowledge = async (id) => {
+    try {
+      await removeKnowledge(id)
+      const rows = await fetchKnowledge()
+      setKnowledge(rows)
+      showToast('File dihapus dari Knowledge Base.')
+    } catch (err) {
+      console.error('Gagal menghapus knowledge:', err)
+      showToast('Gagal menghapus file.')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3 text-slate-400">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+          <p className="text-sm">Memuat data…</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -272,27 +336,44 @@ export default function Workspace() {
 
         <main className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-            {page === 'dashboard' && <Dashboard onNavigate={setPage} onNewTask={() => openNewTask()} tasks={tasks} />}
+            {page === 'dashboard' && (
+              <Dashboard
+                onNavigate={setPage}
+                onNewTask={() => openNewTask()}
+                tasks={tasks}
+                knowledge={knowledge}
+                userName={userName}
+              />
+            )}
             {page === 'employees' && (
               <Employees
                 onGiveTask={openNewTask}
                 refs={refs}
                 onUploadRefs={handleUploadRefs}
                 onRemoveRef={handleRemoveRef}
+                tasks={tasks}
               />
             )}
             {page === 'tasks' && (
               <Tasks
                 tasks={tasks}
                 onNewTask={() => openNewTask()}
-                onUpdateTask={updateTask}
+                onUpdateTask={updateTaskLocal}
                 onRequestRevision={requestRevision}
                 refs={refs}
                 onCreateDemoFeed={createDemoFeed}
               />
             )}
-            {page === 'knowledge' && <Knowledge />}
-            {page === 'history' && <History />}
+            {page === 'knowledge' && (
+              <Knowledge
+                knowledge={knowledge}
+                onUpload={handleUploadKnowledge}
+                onRemove={handleRemoveKnowledge}
+              />
+            )}
+            {page === 'history' && (
+              <History history={history} tasks={tasks} />
+            )}
             {page === 'settings' && <Settings />}
           </div>
         </main>

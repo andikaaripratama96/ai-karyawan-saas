@@ -1,8 +1,8 @@
 "use client";
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Card, EmployeeAvatar } from '../components/ui'
-import { IconSearch, IconUpload, IconFile, IconLink, IconDownload, IconDatabase } from '../components/icons'
-import { knowledge, employeeById } from '../data/mockData'
+import { IconSearch, IconUpload, IconFile, IconLink, IconDownload, IconDatabase, IconTrash } from '../components/icons'
+import { employeeById } from '../data/mockData'
 
 const typeFilters = ['Semua', 'CSV', 'Spreadsheet', 'Dokumen', 'PDF']
 
@@ -13,11 +13,18 @@ const typeStyles = {
   PDF: 'bg-rose-100 text-rose-700',
 }
 
-export default function Knowledge() {
+export default function Knowledge({ knowledge = [], onUpload, onRemove }) {
   const [filter, setFilter] = useState('Semua')
   const [query, setQuery] = useState('')
+  const fileInputRef = useRef(null)
 
-  const filtered = knowledge.filter((k) => {
+  const normalized = knowledge.map((k) => ({
+    ...k,
+    type: k.type || 'Dokumen',
+    relatedTo: k.relatedTo || 'AI Karyawan',
+  }))
+
+  const filtered = normalized.filter((k) => {
     const matchType = filter === 'Semua' || k.type === filter
     const q = query.trim().toLowerCase()
     const matchQuery =
@@ -28,7 +35,10 @@ export default function Knowledge() {
     return matchType && matchQuery
   })
 
-  const totalSize = knowledge.reduce((acc, k) => acc + parseFloat(k.size.replace(',', '.')), 0)
+  const totalSize = normalized.reduce((acc, k) => {
+    const n = parseFloat(String(k.size ?? '').replace(',', '.'))
+    return Number.isFinite(n) ? acc + n : acc
+  }, 0)
 
   return (
     <div className="space-y-5">
@@ -39,15 +49,27 @@ export default function Knowledge() {
             Sumber pengetahuan yang dipakai AI Karyawan untuk bekerja.
           </p>
         </div>
-        <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-violet-500/25 transition hover:from-violet-500 hover:to-fuchsia-500">
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-violet-500/25 transition hover:from-violet-500 hover:to-fuchsia-500"
+        >
           <IconUpload width={16} height={16} />
           Unggah Data
         </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files?.length && onUpload) onUpload(e.target.files)
+            e.target.value = ''
+          }}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Card className="p-4">
-          <p className="text-2xl font-bold text-slate-900">{knowledge.length}</p>
+          <p className="text-2xl font-bold text-slate-900">{normalized.length}</p>
           <p className="text-xs text-slate-500">Total File</p>
         </Card>
         <Card className="p-4">
@@ -59,7 +81,7 @@ export default function Knowledge() {
           <p className="text-xs text-slate-500">AI Terhubung</p>
         </Card>
         <Card className="p-4">
-          <p className="text-2xl font-bold text-emerald-600">6/7</p>
+          <p className="text-2xl font-bold text-emerald-600">{normalized.length}/{normalized.length}</p>
           <p className="text-xs text-slate-500">Data Terverifikasi</p>
         </Card>
       </div>
@@ -111,13 +133,13 @@ export default function Knowledge() {
             return (
               <div key={k.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
-                  <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${typeStyles[k.type]}`}>
+                  <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${typeStyles[k.type] ?? typeStyles.Dokumen}`}>
                     <IconFile width={18} height={18} />
                   </span>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-slate-800">{k.name}</p>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      {k.category} · {k.size} · Diperbarui {k.updatedAt}
+                      {k.category} · {k.size || '—'} · Diperbarui {k.updatedAt}
                     </p>
                     <p className="mt-0.5 hidden truncate text-xs text-slate-400 sm:block">{k.description}</p>
                   </div>
@@ -140,6 +162,15 @@ export default function Knowledge() {
                   >
                     <IconDownload width={15} height={15} />
                   </button>
+                  {onRemove && (
+                    <button
+                      onClick={() => onRemove(k.id)}
+                      className="rounded-lg border border-rose-200 bg-rose-50 p-2 text-rose-500 transition hover:bg-rose-100"
+                      title="Hapus"
+                    >
+                      <IconTrash width={15} height={15} />
+                    </button>
+                  )}
                 </div>
               </div>
             )

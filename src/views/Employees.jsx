@@ -4,12 +4,12 @@ import { Card, EmployeeAvatar, StatusBadge, SectionHeader } from '../components/
 import Modal from '../components/Modal'
 import ReferenceGallery, { UploadTrigger } from '../components/ReferenceGallery'
 import { IconPlus, IconCheck, IconLink, IconClock, IconSparkles, IconUpload } from '../components/icons'
-import { employees, employeeStatus, initialTasks } from '../data/mockData'
+import { employees, employeeStatus } from '../data/mockData'
 
-function EmployeeProfileModal({ employee, onClose, onGiveTask, refs, onUploadRefs, onRemoveRef }) {
+function EmployeeProfileModal({ employee, onClose, onGiveTask, refs, onUploadRefs, onRemoveRef, tasks }) {
   if (!employee) return null
   const st = employeeStatus[employee.status]
-  const empTasks = initialTasks.filter((t) => t.employeeId === employee.id)
+  const empTasks = tasks.filter((t) => t.employeeId === employee.id)
 
   return (
     <Modal
@@ -121,7 +121,7 @@ function EmployeeProfileModal({ employee, onClose, onGiveTask, refs, onUploadRef
   )
 }
 
-export default function Employees({ onGiveTask, refs, onUploadRefs, onRemoveRef }) {
+export default function Employees({ onGiveTask, refs, onUploadRefs, onRemoveRef, tasks = [] }) {
   const [selected, setSelected] = useState(null)
 
   return (
@@ -141,7 +141,7 @@ export default function Employees({ onGiveTask, refs, onUploadRefs, onRemoveRef 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {employees.map((emp) => {
           const st = employeeStatus[emp.status]
-          const active = initialTasks.filter((t) => t.employeeId === emp.id && (t.status === 'menunggu' || t.status === 'diproses')).length
+          const active = tasks.filter((t) => t.employeeId === emp.id && (t.status === 'menunggu' || t.status === 'diproses')).length
           return (
             <Card key={emp.id} className="flex flex-col overflow-hidden">
               <div className={`h-1.5 bg-gradient-to-r ${emp.color}`} />
@@ -247,6 +247,7 @@ export default function Employees({ onGiveTask, refs, onUploadRefs, onRemoveRef 
         refs={refs}
         onUploadRefs={onUploadRefs}
         onRemoveRef={onRemoveRef}
+        tasks={tasks}
       />
     </div>
   )

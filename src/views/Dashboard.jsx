@@ -1,6 +1,6 @@
 import { Card, EmployeeAvatar, StatusBadge, ProgressBar, SectionHeader } from '../components/ui'
 import { IconUsers, IconTask, IconCheck, IconDatabase, IconPlus, IconClock, IconSparkles } from '../components/icons'
-import { employees, employeeById, knowledge } from '../data/mockData'
+import { employees, employeeById } from '../data/mockData'
 
 const quickActions = [
   {
@@ -23,7 +23,7 @@ const quickActions = [
   },
 ]
 
-export default function Dashboard({ onNavigate, onNewTask, tasks }) {
+export default function Dashboard({ onNavigate, onNewTask, tasks, knowledge = [], userName = '' }) {
   const activeTasks = tasks.filter((t) => t.status === 'menunggu' || t.status === 'diproses')
   const doneTasks = tasks.filter((t) => t.status === 'selesai')
   const recentTasks = [...tasks].slice(0, 5)
@@ -59,7 +59,7 @@ export default function Dashboard({ onNavigate, onNewTask, tasks }) {
               <IconSparkles width={14} height={14} /> Workspace · Toko Aksara
             </p>
             <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-              Selamat datang kembali, Rudi 👋
+              Selamat datang kembali, {(userName || 'Rudi').split(' ')[0]} 👋
             </h2>
             <p className="mt-1.5 max-w-xl text-sm text-slate-300">
               Semua AI Karyawan kamu siap bekerja. Beri tugas dan pantau hasilnya dalam satu tempat.

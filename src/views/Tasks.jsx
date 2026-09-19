@@ -55,7 +55,7 @@ export default function Tasks({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={() => setResultTaskId(onCreateDemoFeed())}
+            onClick={async () => setResultTaskId(await onCreateDemoFeed())}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-100"
           >
             <IconEye width={16} height={16} />
