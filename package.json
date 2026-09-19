@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prebuild": "node -e \"try{require('fs').rmSync('./.next',{recursive:true,force:true})}catch(e){}\""
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
