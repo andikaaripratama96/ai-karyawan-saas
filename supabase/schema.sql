@@ -11,6 +11,9 @@ create table public.profiles (
   stripe_subscription_id text,
   tasks_used_month integer not null default 0,
   tasks_limit integer not null default 10,
+  images_used_month integer not null default 0,
+  images_limit integer not null default 100,
+  images_quota_month text,
   created_at timestamptz not null default now()
 );
 

@@ -169,3 +169,82 @@ export async function addHistory({ employeeId, action }) {
   })
   if (error) throw error
 }
+
+function currentMonth() {
+  return new Date().toISOString().slice(0, 7)
+}
+
+export async function getImageQuota(supabase) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error("Sesi tidak ditemukan.")
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('images_used_month, images_limit, images_quota_month')
+    .eq('id', user.id)
+    .maybeSingle()
+  if (error) throw error
+
+  const limit = data?.images_limit ?? 100
+  const month = currentMonth()
+  let used = data?.images_quota_month === month ? (data?.images_used_month ?? 0) : 0
+  return { used, limit, remaining: Math.max(limit - used, 0) }
+}
+
+export async function consumeImageQuota(supabase) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error("Sesi tidak ditemukan.")
+
+  const month = currentMonth()
+  const { data, error: selectError } = await supabase
+    .from('profiles')
+    .select('images_used_month, images_limit, images_quota_month')
+    .eq('id', user.id)
+    .maybeSingle()
+  if (selectError) throw selectError
+
+  const limit = data?.images_limit ?? 100
+  const used = data?.images_quota_month === month ? (data?.images_used_month ?? 0) : 0
+  if (used >= limit) return { ok: false, reason: 'limit', used, limit, remaining: 0 }
+
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({
+      images_used_month: used + 1,
+      images_quota_month: month,
+    })
+    .eq('id', user.id)
+  if (updateError) throw updateError
+
+  return { ok: true, used: used + 1, limit, remaining: Math.max(limit - used - 1, 0) }
+}
+
+export async function refundImageQuota(supabase) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error("Sesi tidak ditemukan.")
+
+  const month = currentMonth()
+  const { data } = await supabase
+    .from('profiles')
+    .select('images_used_month, images_quota_month')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const used = data?.images_quota_month === month ? (data?.images_used_month ?? 0) : 0
+  if (used <= 0) return
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      images_used_month: used - 1,
+      images_quota_month: month,
+    })
+    .eq('id', user.id)
+  if (error) throw error
+}

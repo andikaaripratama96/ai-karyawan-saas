@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Modal from './Modal'
 import { EmployeeAvatar, StatusBadge } from './ui'
 import { IconCheck, IconDownload, IconAlert, IconPencil, IconRefresh, IconX, IconSparkles } from './icons'
@@ -16,6 +16,20 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
   const [aiImage, setAiImage] = useState(null)
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState(null)
+  const [quota, setQuota] = useState(null)
+
+  useEffect(() => {
+    let active = true
+    fetch('/api/image')
+      .then((r) => r.json())
+      .then((d) => {
+        if (active && d.ok) setQuota(d.quota)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
 
   if (!task) return null
 
@@ -118,7 +132,8 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
           <p className="text-[13px] leading-relaxed text-violet-700">
             Hasil teks dibuat oleh <span className="font-semibold">Gemini AI</span>. Untuk
             menghasilkan <span className="font-semibold">gambar</span> feed, klik tombol
-            &ldquo;Generate Gambar AI&rdquo; (biaya dibebankan ke akun Gemini kamu per gambar).
+            &ldquo;Generate Gambar AI&rdquo; — <span className="font-semibold">sudah termasuk</span> dalam
+            kuota langganan Anda{quota ? ` (${quota.remaining}/${quota.limit} gambar bulan ini)` : ''}.
           </p>
         </div>
 
@@ -146,9 +161,20 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <p className="text-[13px] font-semibold text-slate-800">Pratinjau Feed Instagram</p>
               <div className="flex items-center gap-2">
+                {quota && (
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      quota.remaining > 0
+                        ? 'bg-blue-50 text-blue-600 ring-1 ring-inset ring-blue-200'
+                        : 'bg-rose-50 text-rose-600 ring-1 ring-inset ring-rose-200'
+                    }`}
+                  >
+                    Kuota: {quota.remaining}/{quota.limit} gambar/bulan
+                  </span>
+                )}
                 <button
                   onClick={generateImage}
-                  disabled={aiLoading}
+                  disabled={aiLoading || (quota !== null && quota.remaining <= 0)}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-violet-500/25 transition hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-60"
                 >
                   <IconSparkles width={13} height={13} />
@@ -172,7 +198,7 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
               loading={aiLoading}
             />
             <p className="mt-2 text-[11px] text-slate-400">
-              Gambar dibuat oleh Gemini AI (biaya dikenakan per generate) dan diberi watermark SynthID.
+              Gambar dibuat oleh Gemini AI dan diberi watermark SynthID.
             </p>
             {typeof result.outputs?.[0] === 'object' && (
               <div className="mt-4">
