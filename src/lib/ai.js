@@ -86,3 +86,53 @@ export async function runAiTask({ employeeId, title, description = "" }) {
     result: buildMockResult(employeeId, title, 0, description),
   };
 }
+
+const IMAGE_MODELS = [
+  "gemini-3.1-flash-image",
+  "gemini-2.5-flash-image",
+];
+
+export async function runImageGen({ prompt }) {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) {
+    return { ok: false, usedMock: true, error: "GEMINI_API_KEY belum diatur" };
+  }
+
+  let lastErr;
+  for (const model of IMAGE_MODELS) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseModalities: ["TEXT", "IMAGE"],
+              imageConfig: { aspectRatio: "1:1", imageSize: "1K" },
+            },
+          }),
+          signal: controller.signal,
+        },
+      );
+      clearTimeout(timeoutId);
+      if (!res.ok) throw new Error(`Gemini gambar ${res.status}`);
+
+      const data = await res.json();
+      const parts = data?.candidates?.[0]?.content?.parts ?? [];
+      const imagePart = parts.find((p) => p.inlineData?.data);
+      if (!imagePart) throw new Error("Respons tanpa gambar");
+
+      const mimeType = imagePart.inlineData.mimeType || "image/png";
+      const dataUrl = `data:${mimeType};base64,${imagePart.inlineData.data}`;
+      return { ok: true, usedMock: false, dataUrl, model };
+    } catch (err) {
+      lastErr = err instanceof Error ? err.message : String(err);
+    }
+  }
+
+  return { ok: false, usedMock: true, error: lastErr };
+}

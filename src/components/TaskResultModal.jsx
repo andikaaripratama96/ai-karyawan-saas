@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import Modal from './Modal'
 import { EmployeeAvatar, StatusBadge } from './ui'
-import { IconCheck, IconDownload, IconAlert, IconPencil, IconRefresh, IconX } from './icons'
+import { IconCheck, IconDownload, IconAlert, IconPencil, IconRefresh, IconX, IconSparkles } from './icons'
 import FeedPreview from './FeedPreview'
 import FeedConceptGrid from './FeedConceptGrid'
 
@@ -13,6 +13,9 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(null)
   const [saved, setSaved] = useState(false)
+  const [aiImage, setAiImage] = useState(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState(null)
 
   if (!task) return null
 
@@ -64,11 +67,45 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
     setDraft((d) => ({ ...d, outputs: d.outputs.filter((_, i) => i !== index) }))
   }
 
+  const generateImage = async () => {
+    setAiLoading(true)
+    setAiError(null)
+    try {
+      const title = typeof firstOutput === 'string' ? firstOutput : firstOutput?.title
+      const caption = typeof firstOutput === 'string' ? firstOutput : firstOutput?.caption
+      const prompt = [
+        `Gambar feed Instagram square profesional untuk brand produk Indonesia.`,
+        `Tema: ${task.title}`,
+        title ? `Judul: ${title}` : '',
+        caption ? `Caption: ${caption}` : '',
+        result?.notes ? `Catatan: ${result.notes}` : '',
+        'Gaya: bersih, menarik, warna cerah, tanpa teks pada gambar.',
+      ]
+        .filter(Boolean)
+        .join('\n')
+      const res = await fetch('/api/image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Gagal membuat gambar')
+      setAiImage(data.dataUrl)
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Terjadi kesalahan saat membuat gambar')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
   return (
     <Modal
       open={Boolean(task)}
       onClose={() => {
         setEditing(false)
+        setAiImage(null)
+        setAiError(null)
+        setAiLoading(false)
         onClose()
       }}
       title={task.title}
@@ -79,9 +116,9 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
         <div className="flex items-start gap-2.5 rounded-xl bg-violet-50 px-4 py-3 ring-1 ring-inset ring-violet-200">
           <span className="mt-0.5 text-xs">✨</span>
           <p className="text-[13px] leading-relaxed text-violet-700">
-            Hasil ini adalah <span className="font-semibold">simulasi demo</span> (mock data) — belum
-            terhubung ke Gemini/API AI, jadi <span className="font-semibold">tidak ada biaya</span>. Kamu
-            bisa mengoreksi hasilnya dan meminta AI merevisi.
+            Hasil teks dibuat oleh <span className="font-semibold">Gemini AI</span>. Untuk
+            menghasilkan <span className="font-semibold">gambar</span> feed, klik tombol
+            &ldquo;Generate Gambar AI&rdquo; (biaya dibebankan ke akun Gemini kamu per gambar).
           </p>
         </div>
 
@@ -106,13 +143,37 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
 
         {isDone && task.employeeId === 'content-creator' && result && (
           <div>
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <p className="text-[13px] font-semibold text-slate-800">Pratinjau Feed Instagram</p>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">
-                {refs.length} referensi
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={generateImage}
+                  disabled={aiLoading}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-violet-500/25 transition hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-60"
+                >
+                  <IconSparkles width={13} height={13} />
+                  {aiLoading ? 'Menggambar…' : aiImage ? 'Gambar Ulang' : 'Generate Gambar AI'}
+                </button>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">
+                  {refs.length} referensi
+                </span>
+              </div>
             </div>
-            <FeedPreview refs={refs} caption={previewCaption} notes={result.notes} />
+            {aiError && (
+              <div className="mb-2 rounded-lg bg-rose-50 px-3 py-2 text-xs font-medium text-rose-600 ring-1 ring-inset ring-rose-200">
+                {aiError}
+              </div>
+            )}
+            <FeedPreview
+              refs={refs}
+              caption={previewCaption}
+              notes={result.notes}
+              aiImage={aiImage}
+              loading={aiLoading}
+            />
+            <p className="mt-2 text-[11px] text-slate-400">
+              Gambar dibuat oleh Gemini AI (biaya dikenakan per generate) dan diberi watermark SynthID.
+            </p>
             {typeof result.outputs?.[0] === 'object' && (
               <div className="mt-4">
                 <div className="mb-2.5 flex items-center justify-between">

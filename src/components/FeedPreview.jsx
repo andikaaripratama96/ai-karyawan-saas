@@ -25,8 +25,8 @@ function SendIcon() {
   )
 }
 
-export default function FeedPreview({ refs, caption, notes }) {
-  const cover = refs && refs.length > 0 ? refs[0].dataUrl : null
+export default function FeedPreview({ refs, caption, notes, aiImage = null, loading = false }) {
+  const cover = aiImage || (refs && refs.length > 0 ? refs[0].dataUrl : null)
   const captionText = typeof caption === 'string' && caption ? caption : 'Caption hasil AI akan tampil di sini.'
   const comment = 'Klik untuk melihat komentar…'
 
@@ -44,14 +44,22 @@ export default function FeedPreview({ refs, caption, notes }) {
       </div>
 
       <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
-        {cover ? (
+        {loading ? (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-violet-100 via-fuchsia-50 to-slate-100 px-6 text-center">
+            <span className="h-8 w-8 animate-spin rounded-full border-[3px] border-violet-300 border-t-violet-600" />
+            <p className="text-sm font-semibold text-slate-600">AI sedang menggambar…</p>
+            <p className="text-xs leading-relaxed text-slate-400">
+              Biasanya butuh 20–60 detik. Gambar dihasilkan oleh Gemini (Nano Banana).
+            </p>
+          </div>
+        ) : cover ? (
           <img src={cover} alt="Referensi feed" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-violet-100 via-fuchsia-50 to-slate-100 px-6 text-center">
             <span className="text-5xl">✨</span>
             <p className="text-sm font-semibold text-slate-600">Pratinjau visual feed</p>
             <p className="text-xs leading-relaxed text-slate-400">
-              Unggah foto referensi pada profil Naya agar preview memakai gambar brand kamu.
+              Unggah foto referensi pada profil Naya agar preview memakai gambar brand kamu, atau minta AI bisa menggambar.
             </p>
           </div>
         )}
