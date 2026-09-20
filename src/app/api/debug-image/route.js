@@ -9,16 +9,22 @@ export async function POST(request) {
   } catch {}
   const key = process.env.GEMINI_API_KEY ? "ADA (" + process.env.GEMINI_API_KEY.slice(0, 14) + "...)" : "TIDAK ADA";
   const result = await runImageGen({ prompt });
+  if (!result.ok) {
+    return NextResponse.json({
+      envKey: key,
+      result: { ok: false, usedMock: result.usedMock, error: result.error ?? null },
+    });
+  }
   return NextResponse.json({
     envKey: key,
     result: {
-      ok: result.ok,
-      usedMock: result.usedMock,
-      error: result.error ?? null,
-      model: result.model ?? null,
-      hasData: Boolean(result.dataUrl),
-      dataUrlLength: result.dataUrl ? result.dataUrl.length : null,
-      dataUrlMime: result.dataUrl ? result.dataUrl.split(',')[0] : null,
+      ok: true,
+      usedMock: false,
+      error: null,
+      model: result.model,
+      fullDataUrlPrefix: result.dataUrl ? result.dataUrl.slice(0, 40) : null,
+      fullDataUrlLength: result.dataUrl ? result.dataUrl.length : null,
+      dataUrl: result.dataUrl ?? null,
     },
   });
 }
