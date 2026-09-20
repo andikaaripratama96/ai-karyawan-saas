@@ -16,6 +16,7 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
   const [aiImage, setAiImage] = useState(null)
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState(null)
+  const [aiPhase, setAiPhase] = useState('')
   const [quota, setQuota] = useState(null)
 
   useEffect(() => {
@@ -84,6 +85,7 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
   const generateImage = async () => {
     setAiLoading(true)
     setAiError(null)
+    setAiPhase('Mengirim permintaan…')
     try {
       const title = typeof firstOutput === 'string' ? firstOutput : firstOutput?.title
       const caption = typeof firstOutput === 'string' ? firstOutput : firstOutput?.caption
@@ -97,16 +99,27 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
       ]
         .filter(Boolean)
         .join('\n')
+      setAiPhase('AI sedang menggambar… (butuh ±30–60 detik)')
       const res = await fetch('/api/image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt }),
       })
       const data = await res.json()
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Gagal membuat gambar')
+      if (!res.ok || !data.ok) {
+        setAiError(`Server: ${data.error || ('HTTP ' + res.status)}`)
+        return
+      }
+      setAiPhase('Gambar diterima dari server…')
+      if (!data.dataUrl) {
+        setAiError('Server tidak mengirimkan data gambar.')
+        return
+      }
       setAiImage(data.dataUrl)
+      setAiPhase('')
     } catch (err) {
       setAiError(err instanceof Error ? err.message : 'Terjadi kesalahan saat membuat gambar')
+      setAiPhase('')
     } finally {
       setAiLoading(false)
     }
@@ -188,6 +201,11 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
             {aiError && (
               <div className="mb-2 rounded-lg bg-rose-50 px-3 py-2 text-xs font-medium text-rose-600 ring-1 ring-inset ring-rose-200">
                 {aiError}
+              </div>
+            )}
+            {aiPhase && !aiError && (
+              <div className="mb-2 rounded-lg bg-blue-50 px-3 py-2 text-xs font-medium text-blue-600 ring-1 ring-inset ring-blue-200">
+                {aiPhase}
               </div>
             )}
             <FeedPreview
