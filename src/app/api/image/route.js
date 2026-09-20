@@ -3,6 +3,21 @@ import { createClient } from "@/lib/supabase-server";
 import { runImageGen } from "@/lib/ai";
 import { getImageQuota, consumeImageQuota, refundImageQuota } from "@/lib/supabase-data";
 
+async function logEvent(supabase, kind, payload = {}) {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    await supabase.from("debug_log").insert({
+      user_id: user?.id ?? null,
+      kind,
+      payload,
+    });
+  } catch {
+    // Logging tidak boleh menggagalkan permintaan utama.
+  }
+}
+
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -33,10 +48,13 @@ export async function POST(request) {
     return NextResponse.json({ ok: false, error: "Sesi tidak ditemukan. Silakan masuk kembali." }, { status: 401 });
   }
 
+  await logEvent(supabase, "image_post_start", { promptLen: prompt.length });
+
   let consumption;
   try {
     consumption = await consumeImageQuota(supabase);
-  } catch {
+  } catch (err) {
+    await logEvent(supabase, "image_quota_error", { message: String(err?.message ?? err) });
     return NextResponse.json({ ok: false, error: "Gagal memeriksa kuota gambar." }, { status: 500 });
   }
 
@@ -49,13 +67,17 @@ export async function POST(request) {
 
   const { ok, usedMock, error, dataUrl, model } = await runImageGen({ prompt });
   if (!ok) {
+    await logEvent(supabase, "image_gen_failed", { model, error: error ?? null });
     try {
       await refundImageQuota(supabase);
+      await logEvent(supabase, "image_refunded", { reason: "gen_failed" });
     } catch {
-      // Abaikan kegagalan refund, jangan halangi response utama.
+      await logEvent(supabase, "image_refund_error", {});
     }
     return NextResponse.json({ ok: false, usedMock, error }, { status: 502 });
   }
+
+  await logEvent(supabase, "image_gen_ok", { model, dataUrlLen: dataUrl?.length ?? 0 });
 
   return NextResponse.json({ ok: true, usedMock, dataUrl, model, quota: consumption });
 }
