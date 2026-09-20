@@ -1,0 +1,13 @@
+Logging into your Netlify account...
+Opening https://app.netlify.com/authorize?response_type=ticket&ticket=90583c8d2f2ec41c3f30a88963187e5e&utm_source=cli&utm_campaign=integrations
+
+To request authorization from a human, run: netlify login --request "<msg>"
+
+[33m⠋[39m Waiting for authorization...
+[1G
+You are now logged into your Netlify account!
+
+Run netlify status for account details
+
+To see all available commands run: netlify help
+

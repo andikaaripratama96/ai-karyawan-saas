@@ -1,0 +1,15 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/cookie-test/route": "app/api/cookie-test/route.js",
+  "/api/cookie-test/target/route": "app/api/cookie-test/target/route.js",
+  "/api/debug-image/route": "app/api/debug-image/route.js",
+  "/api/debug-session/route": "app/api/debug-session/route.js",
+  "/api/debug-task/route": "app/api/debug-task/route.js",
+  "/api/image/route": "app/api/image/route.js",
+  "/api/tasks/route": "app/api/tasks/route.js",
+  "/auth/callback/route": "app/auth/callback/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js"
+}

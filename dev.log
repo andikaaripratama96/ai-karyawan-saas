@@ -1,0 +1,84 @@
+
+> ai-karyawan-saas@0.1.0 dev
+> next dev
+
+▲ Next.js 16.3.5 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.101.10:3000
+- Environments: .env.local
+✓ Ready in 2.1s
+✓ Running next.config.ts took 343ms
+
+ GET /api/image 401 in 3.6s (next.js: 3.4s, application-code: 195ms)
+ GET / 200 in 3.5s (next.js: 1370ms, application-code: 2.1s)
+ POST /api/tasks 200 in 4.6s (next.js: 1384ms, application-code: 3.2s)
+⨯ The directory at "C:\Users\Acer\Documents\Default Project\ai-karyawan-saas\.next\dev" was deleted.
+
+Deleting this directory while Next.js is running can lead to undefined behavior. Restarting the server to recover...
+▲ Next.js 16.3.5 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.101.10:3000
+- Environments: .env.local
+✓ Ready in 2.3s
+✓ Running next.config.ts took 394ms
+
+⨯ The directory at "C:\Users\Acer\Documents\Default Project\ai-karyawan-saas\.next\dev" was deleted.
+
+Deleting this directory while Next.js is running can lead to undefined behavior. Restarting the server to recover...
+▲ Next.js 16.3.5 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.101.10:3000
+- Environments: .env.local
+✓ Ready in 1304ms
+✓ Running next.config.ts took 318ms
+
+⨯ The directory at "C:\Users\Acer\Documents\Default Project\ai-karyawan-saas\.next\dev" was deleted.
+
+Deleting this directory while Next.js is running can lead to undefined behavior. Restarting the server to recover...
+▲ Next.js 16.3.5 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.101.10:3000
+- Environments: .env.local
+✓ Ready in 1315ms
+✓ Running next.config.ts took 236ms
+
+⨯ The directory at "C:\Users\Acer\Documents\Default Project\ai-karyawan-saas\.next\dev" was deleted.
+
+Deleting this directory while Next.js is running can lead to undefined behavior. Restarting the server to recover...
+▲ Next.js 16.3.5 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.101.10:3000
+- Environments: .env.local
+✓ Ready in 1280ms
+✓ Running next.config.ts took 171ms
+
+⨯ The directory at "C:\Users\Acer\Documents\Default Project\ai-karyawan-saas\.next\dev" was deleted.
+
+Deleting this directory while Next.js is running can lead to undefined behavior. Restarting the server to recover...
+▲ Next.js 16.3.5 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.101.10:3000
+- Environments: .env.local
+✓ Ready in 1163ms
+✓ Running next.config.ts took 208ms
+
+⨯ The directory at "C:\Users\Acer\Documents\Default Project\ai-karyawan-saas\.next\dev" was deleted.
+
+Deleting this directory while Next.js is running can lead to undefined behavior. Restarting the server to recover...
+▲ Next.js 16.3.5 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.101.10:3000
+- Environments: .env.local
+✓ Ready in 2.3s
+✓ Running next.config.ts took 312ms
+
+⨯ The directory at "C:\Users\Acer\Documents\Default Project\ai-karyawan-saas\.next\dev" was deleted.
+
+Deleting this directory while Next.js is running can lead to undefined behavior. Restarting the server to recover...
+▲ Next.js 16.3.5 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.101.10:3000
+- Environments: .env.local
+✓ Ready in 4.8s
+✓ Running next.config.ts took 810ms
+

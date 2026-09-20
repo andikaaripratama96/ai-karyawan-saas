@@ -1,6 +1,6 @@
 import { IconBell, IconMenu, IconPlus, IconSearch } from './icons'
 
-const APP_VERSION = 'v1.4-hotfix9'
+const APP_VERSION = 'v1.4-hotfix10'
 
 export default function Header({ currentTitle, onOpenSidebar, onNewTask, userName = '', userEmail = '' }) {
   const initials = (userName.split(' ').map((w) => w[0]).slice(0, 2).join('') || userEmail[0] || 'A').toUpperCase()

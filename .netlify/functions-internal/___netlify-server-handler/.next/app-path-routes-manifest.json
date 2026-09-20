@@ -1,0 +1,15 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/cookie-test/route": "/api/cookie-test",
+  "/api/cookie-test/target/route": "/api/cookie-test/target",
+  "/api/debug-image/route": "/api/debug-image",
+  "/api/debug-session/route": "/api/debug-session",
+  "/api/debug-task/route": "/api/debug-task",
+  "/api/image/route": "/api/image",
+  "/api/tasks/route": "/api/tasks",
+  "/auth/callback/route": "/auth/callback",
+  "/favicon.ico/route": "/favicon.ico",
+  "/login/page": "/login",
+  "/page": "/"
+}

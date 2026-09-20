@@ -226,15 +226,13 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
             <div className="mb-2 rounded-lg px-3 py-2 text-xs font-medium ring-1 ring-inset ${
               aiError
                 ? 'bg-rose-50 text-rose-600 ring-rose-200'
-                : aiLoading || aiPhase
-                  ? 'bg-blue-50 text-blue-600 ring-blue-200'
-                  : 'bg-slate-50 text-slate-500 ring-slate-200'
+                : 'bg-blue-50 text-blue-600 ring-blue-200'
             }">
               {aiError
                 ? `❌ ${aiError}`
                 : aiLoading
                   ? aiPhase || 'Menggambar…'
-                  : `Siap. Klik "Generate Semua Gambar AI" untuk menggambar ${feedOutputs.length} feed sekaligus.`}
+                  : `v1.4-hotfix10 · Siap. Klik "Generate Semua Gambar AI" untuk menggambar ${feedOutputs.length} feed sekaligus.`}
             </div>
             <FeedPreview
               refs={refs}
