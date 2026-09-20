@@ -13,7 +13,7 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(null)
   const [saved, setSaved] = useState(false)
-  const [aiImage, setAiImage] = useState(null)
+  const [aiImages, setAiImages] = useState([])
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState(null)
   const [aiPhase, setAiPhase] = useState('')
@@ -82,40 +82,50 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
     setDraft((d) => ({ ...d, outputs: d.outputs.filter((_, i) => i !== index) }))
   }
 
-  const generateImage = async () => {
-    setAiLoading(true)
+  const generatedImagesCount = Array.isArray(aiImages) ? aiImages.filter(Boolean).length : 0
+  const feedOutputs = Array.isArray(result?.outputs)
+    ? result.outputs.map((o) => (typeof o === 'string' ? { title: o, caption: o } : o))
+    : []
+
+  const generateAllImages = async () => {
     setAiError(null)
-    setAiPhase('Mengirim permintaan…')
+    setAiImages([])
+    if (feedOutputs.length === 0) {
+      setAiError('Belum ada konsep feed untuk digambar.')
+      return
+    }
+    setAiLoading(true)
     try {
-      const title = typeof firstOutput === 'string' ? firstOutput : firstOutput?.title
-      const caption = typeof firstOutput === 'string' ? firstOutput : firstOutput?.caption
-      const prompt = [
-        `Gambar feed Instagram square profesional untuk brand produk Indonesia.`,
-        `Tema: ${task.title}`,
-        title ? `Judul: ${title}` : '',
-        caption ? `Caption: ${caption}` : '',
-        result?.notes ? `Catatan: ${result.notes}` : '',
-        'Gaya: bersih, menarik, warna cerah, tanpa teks pada gambar.',
-      ]
-        .filter(Boolean)
-        .join('\n')
-      setAiPhase('AI sedang menggambar… (butuh ±30–60 detik)')
-      const res = await fetch('/api/image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
-      })
-      const data = await res.json()
-      if (!res.ok || !data.ok) {
-        setAiError(`Server: ${data.error || ('HTTP ' + res.status)}`)
-        return
+      for (let i = 0; i < feedOutputs.length; i++) {
+        const output = feedOutputs[i]
+        const prompt = [
+          `Gambar feed Instagram square profesional untuk brand produk Indonesia.`,
+          `Tema: ${task.title}`,
+          output?.title ? `Judul: ${output.title}` : '',
+          output?.caption ? `Caption: ${output.caption}` : '',
+          result?.notes ? `Catatan: ${result.notes}` : '',
+          'Gaya: bersih, menarik, warna cerah, tanpa teks pada gambar.',
+        ]
+          .filter(Boolean)
+          .join('\n')
+        setAiPhase(`AI sedang menggambar feed #${i + 1} dari ${feedOutputs.length}… (butuh ±30–60 detik)`)
+        const res = await fetch('/api/image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt }),
+        })
+        const data = await res.json()
+        if (!res.ok || !data.ok) {
+          setAiError(`Feed #${i + 1} gagal. Server: ${data.error || ('HTTP ' + res.status)}`)
+          return
+        }
+        setAiImages((prev) => {
+          const next = [...prev]
+          next[i] = data.dataUrl
+          return next
+        })
+        if (data.quota) setQuota(data.quota)
       }
-      setAiPhase('Gambar diterima dari server…')
-      if (!data.dataUrl) {
-        setAiError('Server tidak mengirimkan data gambar.')
-        return
-      }
-      setAiImage(data.dataUrl)
       setAiPhase('')
     } catch (err) {
       setAiError(err instanceof Error ? err.message : 'Terjadi kesalahan saat membuat gambar')
@@ -130,7 +140,7 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
       open={Boolean(task)}
       onClose={() => {
         setEditing(false)
-        setAiImage(null)
+        setAiImages([])
         setAiError(null)
         setAiLoading(false)
         onClose()
@@ -186,12 +196,16 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
                   </span>
                 )}
                 <button
-                  onClick={generateImage}
+                  onClick={generateAllImages}
                   disabled={aiLoading || (quota !== null && quota.remaining <= 0)}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-violet-500/25 transition hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-60"
                 >
                   <IconSparkles width={13} height={13} />
-                  {aiLoading ? 'Menggambar…' : aiImage ? 'Gambar Ulang' : 'Generate Gambar AI'}
+                  {aiLoading
+                    ? 'Menggambar…'
+                    : generatedImagesCount > 0
+                      ? `Gambar Ulang (${generatedImagesCount})`
+                      : 'Generate Semua Gambar AI'}
                 </button>
                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">
                   {refs.length} referensi
@@ -212,12 +226,31 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
               refs={refs}
               caption={previewCaption}
               notes={result.notes}
-              aiImage={aiImage}
+              aiImage={aiImages?.[0]}
               loading={aiLoading}
             />
             <p className="mt-2 text-[11px] text-slate-400">
               Gambar dibuat oleh Gemini AI dan diberi watermark SynthID.
             </p>
+            {generatedImagesCount > 0 && (
+              <div className="mt-2">
+                <p className="mb-2 text-[13px] font-semibold text-slate-800">
+                  Gambar Hasil AI ({generatedImagesCount}/{feedOutputs.length} konsep)
+                </p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {aiImages.map((img, i) =>
+                    img ? (
+                      <div key={i} className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
+                        <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
+                          <img src={img} alt={`Feed ${i + 1} hasil AI`} className="h-full w-full object-cover" />
+                        </div>
+                        <div className="px-2.5 py-1.5 text-[10px] font-bold text-slate-500">Feed #{i + 1}</div>
+                      </div>
+                    ) : null,
+                  )}
+                </div>
+              </div>
+            )}
             {typeof result.outputs?.[0] === 'object' && (
               <div className="mt-4">
                 <div className="mb-2.5 flex items-center justify-between">

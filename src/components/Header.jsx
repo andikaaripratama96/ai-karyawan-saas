@@ -1,5 +1,7 @@
 import { IconBell, IconMenu, IconPlus, IconSearch } from './icons'
 
+const APP_VERSION = 'v1.4-hotfix9'
+
 export default function Header({ currentTitle, onOpenSidebar, onNewTask, userName = '', userEmail = '' }) {
   const initials = (userName.split(' ').map((w) => w[0]).slice(0, 2).join('') || userEmail[0] || 'A').toUpperCase()
   return (
@@ -48,6 +50,9 @@ export default function Header({ currentTitle, onOpenSidebar, onNewTask, userNam
             <span className="block text-[11px] text-slate-500">Workspace Admin</span>
           </span>
         </button>
+        <span className="mr-1 hidden rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600 ring-1 ring-inset ring-slate-200 sm:inline-block">
+          {APP_VERSION}
+        </span>
         <button
           onClick={onNewTask}
           className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 p-2.5 text-white shadow-md shadow-violet-500/25 sm:hidden"
