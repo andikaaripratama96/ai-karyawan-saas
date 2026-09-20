@@ -83,17 +83,23 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
   }
 
   const generatedImagesCount = Array.isArray(aiImages) ? aiImages.filter(Boolean).length : 0
-  const feedOutputs = Array.isArray(result?.outputs)
-    ? result.outputs.map((o) => (typeof o === 'string' ? { title: o, caption: o } : o))
-    : []
+  const feedOutputs = (() => {
+    const raw = Array.isArray(result?.outputs) ? result.outputs : []
+    if (raw.length > 0) {
+      return raw.map((o) => (typeof o === 'string' ? { title: o, caption: o } : o))
+    }
+    return [
+      { title: 'Feed 1 — konsep utama', caption: result?.summary ?? task.title ?? 'Konsep feed' },
+      { title: 'Feed 2 — sudut pendukung', caption: result?.summary ?? task.title ?? 'Konsep feed' },
+      { title: 'Feed 3 — ajakan aksi', caption: result?.summary ?? task.title ?? 'Konsep feed' },
+    ]
+  })()
 
   const generateAllImages = async () => {
     setAiError(null)
     setAiImages([])
-    if (feedOutputs.length === 0) {
-      setAiError('Belum ada konsep feed untuk digambar.')
-      return
-    }
+    setAiPhase(`Mulai menggambar ${feedOutputs.length} feed…`)
+    window.__aiDebug = { clickedAt: new Date().toISOString(), feeds: feedOutputs.length, step: 'starting' }
     setAiLoading(true)
     try {
       for (let i = 0; i < feedOutputs.length; i++) {
@@ -108,6 +114,7 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
         ]
           .filter(Boolean)
           .join('\n')
+        window.__aiDebug = { ...window.__aiDebug, step: `fetching-${i + 1}` }
         setAiPhase(`AI sedang menggambar feed #${i + 1} dari ${feedOutputs.length}… (butuh ±30–60 detik)`)
         const res = await fetch('/api/image', {
           method: 'POST',
@@ -117,6 +124,7 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
         const data = await res.json()
         if (!res.ok || !data.ok) {
           setAiError(`Feed #${i + 1} gagal. Server: ${data.error || ('HTTP ' + res.status)}`)
+          window.__aiDebug = { ...window.__aiDebug, step: `error-${i + 1}`, status: res.status, error: data.error }
           return
         }
         setAiImages((prev) => {
@@ -125,10 +133,13 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
           return next
         })
         if (data.quota) setQuota(data.quota)
+        window.__aiDebug = { ...window.__aiDebug, step: `done-${i + 1}`, len: data.dataUrl?.length ?? 0 }
       }
       setAiPhase('')
+      window.__aiDebug = { ...window.__aiDebug, step: 'all-done' }
     } catch (err) {
       setAiError(err instanceof Error ? err.message : 'Terjadi kesalahan saat membuat gambar')
+      window.__aiDebug = { ...window.__aiDebug, step: 'fatal', message: String(err) }
       setAiPhase('')
     } finally {
       setAiLoading(false)
@@ -212,16 +223,19 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
                 </span>
               </div>
             </div>
-            {aiError && (
-              <div className="mb-2 rounded-lg bg-rose-50 px-3 py-2 text-xs font-medium text-rose-600 ring-1 ring-inset ring-rose-200">
-                {aiError}
-              </div>
-            )}
-            {aiPhase && !aiError && (
-              <div className="mb-2 rounded-lg bg-blue-50 px-3 py-2 text-xs font-medium text-blue-600 ring-1 ring-inset ring-blue-200">
-                {aiPhase}
-              </div>
-            )}
+            <div className="mb-2 rounded-lg px-3 py-2 text-xs font-medium ring-1 ring-inset ${
+              aiError
+                ? 'bg-rose-50 text-rose-600 ring-rose-200'
+                : aiLoading || aiPhase
+                  ? 'bg-blue-50 text-blue-600 ring-blue-200'
+                  : 'bg-slate-50 text-slate-500 ring-slate-200'
+            }">
+              {aiError
+                ? `❌ ${aiError}`
+                : aiLoading
+                  ? aiPhase || 'Menggambar…'
+                  : `Siap. Klik "Generate Semua Gambar AI" untuk menggambar ${feedOutputs.length} feed sekaligus.`}
+            </div>
             <FeedPreview
               refs={refs}
               caption={previewCaption}
