@@ -105,18 +105,28 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
     try {
       for (let i = 0; i < feedOutputs.length; i++) {
         const output = feedOutputs[i]
-        const prompt = [
-          `Buat 1 gambar feed Instagram square profesional untuk brand Indonesia. Foto referensi yang dilampirkan WAJIB menjadi acuan produk/jasa; tiru produk, warna, dan gaya dari foto tersebut.`,
-          `Brand/bisnis & detail produk: ${task.description || task.title}`,
-          `Tema feed: ${task.title}`,
-          output?.title ? `Konsep/angle feed ini: ${output.title}` : '',
-          output?.caption ? `Caption (untuk konteks produk): ${output.caption}` : '',
-          result?.notes ? `Catatan: ${result.notes}` : '',
-          'Wajib: gambar harus menampilkan produk/jasa SAMA seperti foto referensi secara visual. Gaya: bersih, menarik, warna cerah, tanpa teks pada gambar.',
-        ]
-          .filter(Boolean)
-          .join('\n')
         const referenceImages = selectedRefs.length > 0 ? selectedRefs : (Array.isArray(refs) ? refs.map((r) => r.dataUrl) : [])
+        const hasRefs = referenceImages.length > 0
+        const prompt = hasRefs
+          ? [
+              `Mode EDIT FOTO: ubah foto referensi menjadi feed Instagram square di bawah ini.`,
+              `ATURAN UTAMA: produk yang sama persis di foto referensi WAJIB tampil ULANG secara identik (bentuk, warna, kemasan, label/logo). DILARANG mengganti atau membuat produk lain.`,
+              `Yang boleh diubah: latar belakang, tata letak, pencahayaan, dan penataan feed agar menarik. Hanya boleh menambahkan teks jika konsep feed butuh, kecuali dilarang.`,
+              `Tema feed: ${task.title}`,
+              output?.title ? `Konsep/angle feed ini: ${output.title}` : '',
+              output?.caption ? `Caption (untuk konteks produk): ${output.caption}` : '',
+              result?.notes ? `Catatan: ${result.notes}` : '',
+              'Gaya: bersih, menarik, warna cerah, tanpa teks pada gambar.',
+            ].filter(Boolean).join('\n')
+          : [
+              `Buat 1 gambar feed Instagram square profesional untuk brand Indonesia.`,
+              `Brand/bisnis & detail produk: ${task.description || task.title}`,
+              `Tema feed: ${task.title}`,
+              output?.title ? `Konsep/angle feed ini: ${output.title}` : '',
+              output?.caption ? `Caption (untuk konteks produk): ${output.caption}` : '',
+              result?.notes ? `Catatan: ${result.notes}` : '',
+              'Wajib: gambar harus menampilkan produk/jasa sesuai deskripsi. Gaya: bersih, menarik, warna cerah, tanpa teks pada gambar.',
+            ].filter(Boolean).join('\n')
         window.__aiDebug = { ...window.__aiDebug, step: `fetching-${i + 1}`, refsSent: referenceImages.length }
         setAiPhase(`AI sedang menggambar feed #${i + 1} dari ${feedOutputs.length}… (butuh ±30–60 detik)`)
         const res = await fetch('/api/image', {
