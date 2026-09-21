@@ -36,10 +36,14 @@ export async function POST(request) {
     return NextResponse.json({ ok: false, error: "Body harus berupa JSON" }, { status: 400 });
   }
 
-  const { prompt } = body ?? {};
+  const { prompt, referenceImages } = body ?? {};
   if (!prompt || !prompt.trim()) {
     return NextResponse.json({ ok: false, error: "prompt wajib diisi" }, { status: 400 });
   }
+
+  const refs = Array.isArray(referenceImages)
+    ? referenceImages.filter((r) => typeof r === "string" && r.startsWith("data:image")).slice(0, 4)
+    : [];
 
   let supabase;
   try {
@@ -65,7 +69,7 @@ export async function POST(request) {
     );
   }
 
-  const { ok, usedMock, error, dataUrl, model } = await runImageGen({ prompt });
+  const { ok, usedMock, error, dataUrl, model } = await runImageGen({ prompt, referenceImages: refs });
   if (!ok) {
     await logEvent(supabase, "image_gen_failed", { model, error: error ?? null });
     try {

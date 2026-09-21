@@ -92,11 +92,18 @@ const IMAGE_MODELS = [
   "gemini-2.5-flash-image",
 ];
 
-export async function runImageGen({ prompt }) {
+export async function runImageGen({ prompt, referenceImages = [] }) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
     return { ok: false, usedMock: true, error: "GEMINI_API_KEY belum diatur" };
   }
+
+  const parts = [];
+  for (const ref of referenceImages) {
+    const m = /^data:([^;]+);base64,(.+)$/.exec(ref || "");
+    if (m) parts.push({ inlineData: { mimeType: m[1], data: m[2] } });
+  }
+  parts.push({ text: prompt });
 
   let lastErr;
   for (const model of IMAGE_MODELS) {
@@ -109,7 +116,7 @@ export async function runImageGen({ prompt }) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            contents: [{ role: "user", parts }],
             generationConfig: {
               responseModalities: ["TEXT", "IMAGE"],
               imageConfig: { aspectRatio: "1:1", imageSize: "1K" },

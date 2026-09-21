@@ -18,6 +18,7 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
   const [aiError, setAiError] = useState(null)
   const [aiPhase, setAiPhase] = useState('')
   const [quota, setQuota] = useState(null)
+  const [selectedRefs, setSelectedRefs] = useState([])
 
   useEffect(() => {
     let active = true
@@ -105,22 +106,23 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
       for (let i = 0; i < feedOutputs.length; i++) {
         const output = feedOutputs[i]
         const prompt = [
-          `Buat 1 gambar feed Instagram square profesional untuk brand Indonesia.`,
+          `Buat 1 gambar feed Instagram square profesional untuk brand Indonesia. Foto referensi yang dilampirkan WAJIB menjadi acuan produk/jasa; tiru produk, warna, dan gaya dari foto tersebut.`,
           `Brand/bisnis & detail produk: ${task.description || task.title}`,
           `Tema feed: ${task.title}`,
           output?.title ? `Konsep/angle feed ini: ${output.title}` : '',
           output?.caption ? `Caption (untuk konteks produk): ${output.caption}` : '',
           result?.notes ? `Catatan: ${result.notes}` : '',
-          'Wajib: gambar harus mencerminkan produk/jasa DAN konsep di atas secara visual. Gaya: bersih, menarik, warna cerah, tanpa teks pada gambar.',
+          'Wajib: gambar harus menampilkan produk/jasa SAMA seperti foto referensi secara visual. Gaya: bersih, menarik, warna cerah, tanpa teks pada gambar.',
         ]
           .filter(Boolean)
           .join('\n')
-        window.__aiDebug = { ...window.__aiDebug, step: `fetching-${i + 1}` }
+        const referenceImages = selectedRefs.length > 0 ? selectedRefs : (Array.isArray(refs) ? refs.map((r) => r.dataUrl) : [])
+        window.__aiDebug = { ...window.__aiDebug, step: `fetching-${i + 1}`, refsSent: referenceImages.length }
         setAiPhase(`AI sedang menggambar feed #${i + 1} dari ${feedOutputs.length}… (butuh ±30–60 detik)`)
         const res = await fetch('/api/image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt }),
+          body: JSON.stringify({ prompt, referenceImages }),
         })
         const data = await res.json()
         if (!res.ok || !data.ok) {
@@ -223,6 +225,40 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
                   {refs.length} referensi
                 </span>
               </div>
+            </div>
+            <div className="mb-2 flex flex-wrap items-center gap-1.5">
+              {refs.length === 0 ? (
+                <span className="text-[11px] text-amber-600">
+                  Belum ada foto referensi. Tambahkan di menu Karyawan → Unggah foto, agar hasil
+                  gambar mirip produk Anda.
+                </span>
+              ) : (
+                refs.map((r) => {
+                  const on = selectedRefs.includes(r.dataUrl)
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() =>
+                        setSelectedRefs((prev) =>
+                          on ? prev.filter((d) => d !== r.dataUrl) : [...prev, r.dataUrl],
+                        )
+                      }
+                      className={`relative h-12 w-12 overflow-hidden rounded-lg ring-2 transition ${
+                        on ? 'ring-violet-500' : 'ring-slate-200 hover:ring-violet-300'
+                      }`}
+                      title={r.name}
+                    >
+                      <img src={r.dataUrl} alt={r.name} className="h-full w-full object-cover" />
+                      {on && (
+                        <span className="absolute inset-0 flex items-center justify-center bg-violet-600/40 text-[9px] font-bold text-white">
+                          OK
+                        </span>
+                      )}
+                    </button>
+                  )
+                })
+              )}
             </div>
             <div className="mb-2 rounded-lg px-3 py-2 text-xs font-medium ring-1 ring-inset ${
               aiError
