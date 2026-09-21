@@ -63,6 +63,19 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
     setTimeout(() => setSaved(false), 3000)
   }
 
+  const downloadResults = () => {
+    const imgs = aiImages.filter(Boolean)
+    if (imgs.length === 0) return
+    imgs.forEach((img, i) => {
+      const a = document.createElement('a')
+      a.href = img
+      a.download = `feed-${i + 1}.png`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    })
+  }
+
   const setDraftOutput = (index, value) => {
     setDraft((d) => {
       const outputs = [...d.outputs]
@@ -306,25 +319,6 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
             <p className="mt-2 text-[11px] text-slate-400">
               Gambar dibuat oleh Gemini AI dan diberi watermark SynthID.
             </p>
-            {generatedImagesCount > 0 && (
-              <div className="mt-2">
-                <p className="mb-2 text-[13px] font-semibold text-slate-800">
-                  Gambar Hasil AI ({generatedImagesCount}/{feedOutputs.length} konsep)
-                </p>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {aiImages.map((img, i) =>
-                    img ? (
-                      <div key={i} className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
-                        <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
-                          <img src={img} alt={`Feed ${i + 1} hasil AI`} className="h-full w-full object-cover" />
-                        </div>
-                        <div className="px-2.5 py-1.5 text-[10px] font-bold text-slate-500">Feed #{i + 1}</div>
-                      </div>
-                    ) : null,
-                  )}
-                </div>
-              </div>
-            )}
             {typeof result.outputs?.[0] === 'object' && (
               <div className="mt-4">
                 <div className="mb-2.5 flex items-center justify-between">
@@ -333,7 +327,8 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
                   </p>
                 </div>
                 <FeedConceptGrid
-                  feeds={result.outputs.map((out) => ({
+                  feeds={result.outputs.map((out, i) => ({
+                    image: aiImages?.[i] || null,
                     what: out.title.split('—').pop().trim(),
                     caption: out.caption,
                   }))}
@@ -495,7 +490,10 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
           ) : (
             <>
               {result?.outputs?.length > 0 && (
-                <button className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                <button
+                  onClick={downloadResults}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                >
                   <IconDownload width={16} height={16} />
                   Unduh Hasil
                 </button>
