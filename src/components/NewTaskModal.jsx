@@ -5,7 +5,7 @@ import { EmployeeAvatar } from './ui'
 import { UploadTrigger } from './ReferenceGallery'
 import { IconSend, IconUpload } from './icons'
 
-const emptyForm = { title: '', description: '', employeeId: '', priority: 'sedang', dueDate: '' }
+const emptyForm = { title: '', description: '', employeeId: '', priority: 'sedang', dueDate: '', feedCount: 0 }
 
 export default function NewTaskModal({ open, onClose, employees, initialEmployeeId = '', onSubmit, refs, onUploadRefs, onRemoveRef }) {
   const [form, setForm] = useState({ ...emptyForm, employeeId: initialEmployeeId })
@@ -32,9 +32,13 @@ export default function NewTaskModal({ open, onClose, employees, initialEmployee
       setError('Pilih AI Karyawan yang akan mengerjakan.')
       return
     }
+    const countNote =
+      form.employeeId === 'content-creator' && form.feedCount > 0
+        ? `Buat tepat ${form.feedCount} feed Instagram dengan konsep yang berbeda satu sama lain.`
+        : ''
     onSubmit({
       title: form.title.trim(),
-      description: form.description.trim() || 'Tanpa deskripsi tambahan.',
+      description: [countNote, form.description.trim()].filter(Boolean).join('\n') || 'Tanpa deskripsi tambahan.',
       employeeId: form.employeeId,
       priority: form.priority,
       dueDate: form.dueDate || today,
@@ -69,17 +73,73 @@ export default function NewTaskModal({ open, onClose, employees, initialEmployee
           />
           {form.employeeId === 'content-creator' && (
             <div className="mt-1.5 rounded-xl bg-violet-50/70 px-3 py-2.5 text-[11px] leading-relaxed text-slate-600 ring-1 ring-inset ring-violet-100">
-              <p className="mb-1 font-semibold text-violet-700">Template prompt yang disarankan:</p>
-              <p className="mb-1">
-                <span className="font-semibold text-slate-700">2 feed</span> Instagram untuk promo [produk],
-                latar [suasana], warna [palet], tanpa teks.
-              </p>
-              <p>
-                <span className="font-semibold text-slate-700">4 feed</span> dengan cerita berbeda: (#1)
-                produk sebagai pusat, (#2) lifestyle sehari-hari, (#3) promo harga, (#4) ajakan CTA.
-              </p>
-              <p className="mt-1 text-slate-500">
-                🌟 Tuliskan angka di depan kata &quot;feed/konten&quot; — contoh &quot;2 feed&quot; — agar jumlah dibuat tepat.
+              <p className="mb-1.5 font-semibold text-violet-700">Jumlah feed yang dibuat:</p>
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {[2, 3, 4, 5, 6, 8, 10].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => set('feedCount', form.feedCount === n ? 0 : n)}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                      form.feedCount === n
+                        ? 'bg-violet-600 text-white shadow-sm'
+                        : 'bg-white text-slate-600 ring-1 ring-inset ring-slate-200 hover:ring-violet-300'
+                    }`}
+                  >
+                    {n} feed
+                  </button>
+                ))}
+                {form.feedCount > 0 && (
+                  <span className="rounded-lg bg-violet-100 px-2 py-1 text-[11px] font-semibold text-violet-700">
+                    Terpilih: {form.feedCount} feed ✓
+                  </span>
+                )}
+              </div>
+              <p className="mb-1 font-semibold text-violet-700">Atau pakai template — klik untuk terisi:</p>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    set('feedCount', 2)
+                    set(
+                      'description',
+                      '2 feed Instagram untuk promo [produk Anda], latar elegan bersih, warna pastel cerah, tanpa teks. Feed 1: produk sebagai pusat perhatian. Feed 2: produk di tangan sambil tersenyum (gaya hidup).',
+                    )
+                  }}
+                  className="rounded-lg bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 ring-1 ring-inset ring-slate-200 transition hover:border-violet-300 hover:text-violet-600 hover:ring-violet-300"
+                >
+                  ✨ Promo elegan (2)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    set('feedCount', 3)
+                    set(
+                      'description',
+                      '3 feed Instagram untuk [produk Anda]: (#1) produk hero dengan latar warna brand, (#2) produk sedang dipakai dalam keseharian, (#3) promo harga + ajakan beli. Gaya bersih, warna cerah, tanpa teks.',
+                    )
+                  }}
+                  className="rounded-lg bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 ring-1 ring-inset ring-slate-200 transition hover:border-violet-300 hover:text-violet-600 hover:ring-violet-300"
+                >
+                  📸 Cerita 3 feed
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    set('feedCount', 4)
+                    set(
+                      'description',
+                      '4 feed Instagram untuk [produk Anda]: (#1) produk hero, (#2) lifestyle sehari-hari, (#3) detail & manfaat produk, (#4) promo dengan CTA. Latar sesuai suasana brand, warna cerah, tanpa teks.',
+                    )
+                  }}
+                  className="rounded-lg bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 ring-1 ring-inset ring-slate-200 transition hover:border-violet-300 hover:text-violet-600 hover:ring-violet-300"
+                >
+                  🎬 Kampanye 4 feed
+                </button>
+              </div>
+              <p className="mt-2 text-slate-500">
+                Setelah memilih jumlah, isi juga <span className="font-semibold text-slate-700">Judul Tugas</span> dan
+                ganti bagian <span className="font-semibold">[produk Anda]</span> dengan nama produk sesungguhnya.
               </p>
             </div>
           )}
