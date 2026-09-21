@@ -98,12 +98,12 @@ export async function runImageGen({ prompt, referenceImages = [] }) {
     return { ok: false, usedMock: true, error: "GEMINI_API_KEY belum diatur" };
   }
 
-  const parts = [];
+  const requestParts = [];
   for (const ref of referenceImages) {
     const m = /^data:([^;]+);base64,(.+)$/.exec(ref || "");
-    if (m) parts.push({ inlineData: { mimeType: m[1], data: m[2] } });
+    if (m) requestParts.push({ inlineData: { mimeType: m[1], data: m[2] } });
   }
-  parts.push({ text: prompt });
+  requestParts.push({ text: prompt });
 
   let lastErr;
   for (const model of IMAGE_MODELS) {
@@ -116,7 +116,7 @@ export async function runImageGen({ prompt, referenceImages = [] }) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            contents: [{ role: "user", parts }],
+            contents: [{ role: "user", parts: requestParts }],
             generationConfig: {
               responseModalities: ["TEXT", "IMAGE"],
               imageConfig: { aspectRatio: "1:1", imageSize: "1K" },
@@ -129,8 +129,8 @@ export async function runImageGen({ prompt, referenceImages = [] }) {
       if (!res.ok) throw new Error(`Gemini gambar ${res.status}`);
 
       const data = await res.json();
-      const parts = data?.candidates?.[0]?.content?.parts ?? [];
-      const imagePart = parts.find((p) => p.inlineData?.data);
+      const resultParts = data?.candidates?.[0]?.content?.parts ?? [];
+      const imagePart = resultParts.find((p) => p.inlineData?.data);
       if (!imagePart) throw new Error("Respons tanpa gambar");
 
       const mimeType = imagePart.inlineData.mimeType || "image/png";
