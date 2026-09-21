@@ -5,7 +5,7 @@ import { EmployeeAvatar } from './ui'
 import { UploadTrigger } from './ReferenceGallery'
 import { IconSend, IconUpload } from './icons'
 
-const emptyForm = { title: '', description: '', employeeId: '', priority: 'sedang', dueDate: '', feedCount: 0 }
+const emptyForm = { title: '', description: '', employeeId: '', priority: 'sedang', dueDate: '', feedCount: 0, aspect: '1:1' }
 
 export default function NewTaskModal({ open, onClose, employees, initialEmployeeId = '', onSubmit, refs, onUploadRefs, onRemoveRef }) {
   const [form, setForm] = useState({ ...emptyForm, employeeId: initialEmployeeId })
@@ -33,12 +33,15 @@ export default function NewTaskModal({ open, onClose, employees, initialEmployee
       return
     }
     const countNote =
-      form.employeeId === 'content-creator' && form.feedCount > 0
-        ? `Buat tepat ${form.feedCount} feed Instagram dengan konsep yang berbeda satu sama lain.`
+      form.feedCount > 0
+        ? `Buat tepat ${form.feedCount} feed Instagram dengan konsep yang berbeda satu sama lain, tanpa teks.`
         : ''
     onSubmit({
       title: form.title.trim(),
-      description: [countNote, form.description.trim()].filter(Boolean).join('\n') || 'Tanpa deskripsi tambahan.',
+      description:
+        `[FORMAT:${form.aspect}] ` +
+        [countNote, form.description.trim()].filter(Boolean).join('\n') ||
+        'Tanpa deskripsi tambahan.',
       employeeId: form.employeeId,
       priority: form.priority,
       dueDate: form.dueDate || today,
@@ -71,8 +74,7 @@ export default function NewTaskModal({ open, onClose, employees, initialEmployee
             rows={3}
             className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100"
           />
-          {form.employeeId === 'content-creator' && (
-            <div className="mt-1.5 rounded-xl bg-violet-50/70 px-3 py-2.5 text-[11px] leading-relaxed text-slate-600 ring-1 ring-inset ring-violet-100">
+          <div className="mt-1.5 rounded-xl bg-violet-50/70 px-3 py-2.5 text-[11px] leading-relaxed text-slate-600 ring-1 ring-inset ring-violet-100">
               <p className="mb-1.5 font-semibold text-violet-700">Jumlah feed yang dibuat:</p>
               <div className="mb-2 flex flex-wrap gap-1.5">
                 {[2, 3, 4, 5, 6, 8, 10].map((n) => (
@@ -94,6 +96,27 @@ export default function NewTaskModal({ open, onClose, employees, initialEmployee
                     Terpilih: {form.feedCount} feed ✓
                   </span>
                 )}
+              </div>
+              <p className="mb-1.5 font-semibold text-violet-700">Ukuran gambar (format Instagram):</p>
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {[
+                  { k: '1:1', label: 'Kotak · 1080×1080 😀' },
+                  { k: '4:5', label: 'Potret · 1080×1350 📐' },
+                  { k: '9:16', label: 'Stories/Reels · 1080×1920 📱' },
+                ].map((opt) => (
+                  <button
+                    key={opt.k}
+                    type="button"
+                    onClick={() => set('aspect', form.aspect === opt.k ? '1:1' : opt.k)}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                      form.aspect === opt.k
+                        ? 'bg-violet-600 text-white shadow-sm'
+                        : 'bg-white text-slate-600 ring-1 ring-inset ring-slate-200 hover:ring-violet-300'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
               <p className="mb-1 font-semibold text-violet-700">Atau pakai template — klik untuk terisi:</p>
               <div className="flex flex-wrap gap-1.5">
@@ -200,7 +223,7 @@ export default function NewTaskModal({ open, onClose, employees, initialEmployee
         <div>
           <label className="mb-1.5 flex items-center justify-between text-[13px] font-semibold text-slate-700">
             Referensi Foto
-            {form.employeeId === 'content-creator' && (
+            {true && (
               <span className="text-[11px] font-medium text-violet-500">acuan untuk feed</span>
             )}
           </label>

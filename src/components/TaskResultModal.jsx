@@ -84,6 +84,16 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
   }
 
   const generatedImagesCount = Array.isArray(aiImages) ? aiImages.filter(Boolean).length : 0
+
+  const taskAspect = (() => {
+    const m = `${task.title} ${task.description ?? ''}`.match(/\[FORMAT:([\d:]{3,5})\]/i)
+    return m ? m[1] : '1:1'
+  })()
+  const aspectLabel = {
+    '1:1': '1:1 · 1080×1080 px',
+    '4:5': '4:5 · 1080×1350 px',
+    '9:16': '9:16 · 1080×1920 px',
+  }[taskAspect] || `Format ${taskAspect}`
   const expectedFeedCount = (() => {
     const m = `${task.title} ${task.description ?? ''}`.match(/(\d{1,2})\s*(feed|konten|postingan|post|caption|kulit)/i)
     const n = m ? Number.parseInt(m[1], 10) : 3
@@ -137,7 +147,7 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
         const res = await fetch('/api/image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, referenceImages }),
+          body: JSON.stringify({ prompt, referenceImages, aspectRatio: taskAspect }),
         })
         const data = await res.json()
         if (!res.ok || !data.ok) {

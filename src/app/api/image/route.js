@@ -36,10 +36,12 @@ export async function POST(request) {
     return NextResponse.json({ ok: false, error: "Body harus berupa JSON" }, { status: 400 });
   }
 
-  const { prompt, referenceImages } = body ?? {};
+  const { prompt, referenceImages, aspectRatio } = body ?? {};
   if (!prompt || !prompt.trim()) {
     return NextResponse.json({ ok: false, error: "prompt wajib diisi" }, { status: 400 });
   }
+  const VALID_ASPECTS = ["1:1", "4:5", "9:16"];
+  const ratio = VALID_ASPECTS.includes(aspectRatio) ? aspectRatio : "1:1";
 
   const refs = Array.isArray(referenceImages)
     ? referenceImages.filter((r) => typeof r === "string" && r.startsWith("data:image")).slice(0, 4)
@@ -69,7 +71,7 @@ export async function POST(request) {
     );
   }
 
-  const { ok, usedMock, error, dataUrl, model } = await runImageGen({ prompt, referenceImages: refs });
+  const { ok, usedMock, error, dataUrl, model } = await runImageGen({ prompt, referenceImages: refs, aspectRatio: ratio });
   if (!ok) {
     await logEvent(supabase, "image_gen_failed", { model, error: error ?? null });
     try {

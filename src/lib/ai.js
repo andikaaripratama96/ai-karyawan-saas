@@ -103,11 +103,14 @@ const IMAGE_MODELS = [
   "gemini-2.5-flash-image",
 ];
 
-export async function runImageGen({ prompt, referenceImages = [] }) {
+export async function runImageGen({ prompt, referenceImages = [], aspectRatio = "1:1" }) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
     return { ok: false, usedMock: true, error: "GEMINI_API_KEY belum diatur" };
   }
+
+  const ASPECT_TO_GEMINI = { "1:1": "1:1", "4:5": "4:5", "9:16": "9:16" };
+  const geminiAspect = ASPECT_TO_GEMINI[aspectRatio] || "1:1";
 
   const requestParts = [];
   for (const ref of referenceImages) {
@@ -128,9 +131,9 @@ export async function runImageGen({ prompt, referenceImages = [] }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{ role: "user", parts: requestParts }],
-            generationConfig: {
-              responseModalities: ["TEXT", "IMAGE"],
-              imageConfig: { aspectRatio: "1:1", imageSize: "1K" },
+              generationConfig: {
+                responseModalities: ["TEXT", "IMAGE"],
+                imageConfig: { aspectRatio: geminiAspect, imageSize: "1K" },
             },
           }),
           signal: controller.signal,
