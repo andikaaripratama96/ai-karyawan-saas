@@ -393,6 +393,7 @@ export default function Workspace() {
         onSubmit={handleNewTask}
         refs={refs}
         onUploadRefs={handleUploadRefs}
+        onRemoveRef={handleRemoveRef}
       />
 
       {toast && (

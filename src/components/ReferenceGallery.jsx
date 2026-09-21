@@ -71,7 +71,7 @@ export default function ReferenceGallery({ refs, onUpload, onRemove }) {
               type="button"
               onClick={() => onRemove(r.id)}
               title="Hapus referensi"
-              className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white opacity-0 transition hover:bg-rose-500 group-hover:opacity-100"
+              className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white transition hover:bg-rose-500"
             >
               <IconX width={12} height={12} />
             </button>

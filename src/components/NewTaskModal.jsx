@@ -7,7 +7,7 @@ import { IconSend, IconUpload } from './icons'
 
 const emptyForm = { title: '', description: '', employeeId: '', priority: 'sedang', dueDate: '' }
 
-export default function NewTaskModal({ open, onClose, employees, initialEmployeeId = '', onSubmit, refs, onUploadRefs }) {
+export default function NewTaskModal({ open, onClose, employees, initialEmployeeId = '', onSubmit, refs, onUploadRefs, onRemoveRef }) {
   const [form, setForm] = useState({ ...emptyForm, employeeId: initialEmployeeId })
   const [lastPreset, setLastPreset] = useState(initialEmployeeId)
   const [error, setError] = useState('')
@@ -130,13 +130,22 @@ export default function NewTaskModal({ open, onClose, employees, initialEmployee
           </label>
           <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5">
             {refs.map((r) => (
-              <img
-                key={r.id}
-                src={r.dataUrl}
-                alt={r.name}
-                title={r.name}
-                className="h-16 w-16 rounded-lg border border-slate-200 object-cover"
-              />
+              <div key={r.id} className="relative">
+                <img
+                  src={r.dataUrl}
+                  alt={r.name}
+                  title={r.name}
+                  className="h-16 w-16 rounded-lg border border-slate-200 object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => onRemoveRef?.(r.id)}
+                  title="Hapus foto ini"
+                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm transition hover:bg-rose-600"
+                >
+                  ×
+                </button>
+              </div>
             ))}
             <UploadTrigger
               onUpload={onUploadRefs}
