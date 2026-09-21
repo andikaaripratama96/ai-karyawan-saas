@@ -84,16 +84,21 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
   }
 
   const generatedImagesCount = Array.isArray(aiImages) ? aiImages.filter(Boolean).length : 0
+  const expectedFeedCount = (() => {
+    const m = `${task.title} ${task.description ?? ''}`.match(/(\d{1,2})\s*(feed|konten|postingan|post|caption|kulit)/i)
+    const n = m ? Number.parseInt(m[1], 10) : 3
+    return Math.min(Math.max(n, 1), 12)
+  })()
   const feedOutputs = (() => {
     const raw = Array.isArray(result?.outputs) ? result.outputs : []
     if (raw.length > 0) {
-      return raw.map((o) => (typeof o === 'string' ? { title: o, caption: o } : o))
+      const mapped = raw.map((o) => (typeof o === 'string' ? { title: o, caption: o } : o))
+      return mapped.slice(0, expectedFeedCount)
     }
-    return [
-      { title: 'Feed 1 — konsep utama', caption: result?.summary ?? task.title ?? 'Konsep feed' },
-      { title: 'Feed 2 — sudut pendukung', caption: result?.summary ?? task.title ?? 'Konsep feed' },
-      { title: 'Feed 3 — ajakan aksi', caption: result?.summary ?? task.title ?? 'Konsep feed' },
-    ]
+    return Array.from({ length: expectedFeedCount }, (_, i) => ({
+      title: `Feed ${i + 1} — konsep ${['utama', 'pendukung', 'ajakan aksi'][i] ?? 'lanjutan'}`,
+      caption: result?.summary ?? task.title ?? 'Konsep feed',
+    }))
   })()
 
   const generateAllImages = async () => {

@@ -27,7 +27,7 @@ const ctas = [
   'Pilih emoji 🔥 kalau suka, dan bagikan ke temanmu.',
 ]
 
-function extractCount(title, description) {
+export function extractCount(title, description = '') {
   const text = `${title} ${description ?? ''}`
   const match = text.match(/(\d{1,2})\s*(feed|konten|postingan|post|caption|kulit)/i)
   const n = match ? Number.parseInt(match[1], 10) : 3

@@ -67,6 +67,22 @@ export default function NewTaskModal({ open, onClose, employees, initialEmployee
             rows={3}
             className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100"
           />
+          {form.employeeId === 'content-creator' && (
+            <div className="mt-1.5 rounded-xl bg-violet-50/70 px-3 py-2.5 text-[11px] leading-relaxed text-slate-600 ring-1 ring-inset ring-violet-100">
+              <p className="mb-1 font-semibold text-violet-700">Template prompt yang disarankan:</p>
+              <p className="mb-1">
+                <span className="font-semibold text-slate-700">2 feed</span> Instagram untuk promo [produk],
+                latar [suasana], warna [palet], tanpa teks.
+              </p>
+              <p>
+                <span className="font-semibold text-slate-700">4 feed</span> dengan cerita berbeda: (#1)
+                produk sebagai pusat, (#2) lifestyle sehari-hari, (#3) promo harga, (#4) ajakan CTA.
+              </p>
+              <p className="mt-1 text-slate-500">
+                🌟 Tuliskan angka di depan kata &quot;feed/konten&quot; — contoh &quot;2 feed&quot; — agar jumlah dibuat tepat.
+              </p>
+            </div>
+          )}
         </div>
 
         <div>

@@ -1,4 +1,4 @@
-import { buildMockResult } from "@/utils/mockResult";
+import { buildMockResult, extractCount } from "@/utils/mockResult";
 
 const GEMINI_MODELS = {
   "content-creator": ["gemini-flash-lite-latest", "gemini-flash-latest"],
@@ -16,7 +16,7 @@ Format jawaban WAJIB JSON tanpa teks lain:
   "notes": "catatan singkat untuk pengguna"
 }
 Maksud tugas: {task}
-Jika permintaan menyebut jumlah (misal "10 feed"), buat EXACTLY sejumlah itu. Jika tidak ada angka, buat 3.`,
+Cari angka jumlah feed pada kalimat tugas (misal "2 feed", "3 konten", "10 feed"). HITUNG berapa jumlahnya, lalu buat EXACTLY sejumlah itu — tidak lebih, tidak kurang. Jika tidak ada angka sama sekali, buat 3.`,
   "admin-stok": `Kamu adalah Admin Stok AI bernama Sari untuk UMKM Indonesia.
 Format jawaban WAJIB JSON:
 { "summary": "...", "outputs": ["poin hasil"], "notes": "..." }
@@ -74,6 +74,17 @@ export async function runAiTask({ employeeId, title, description = "" }) {
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
       const parsed = parseModelOutput(text);
       if (!parsed) throw new Error("Format jawaban AI tidak valid");
+      if (employeeId === "content-creator") {
+        const wanted = extractCount(title, description);
+        parsed.outputs = parsed.outputs.slice(0, wanted);
+        while (parsed.outputs.length < wanted) {
+          const i = parsed.outputs.length;
+          parsed.outputs.push({
+            title: `Feed ${i + 1} — konsep pendukung`,
+            caption: `Feed ke-${i + 1} dari "${title}" — siap dikembangkan.`,
+          });
+        }
+      }
       return { usedMock: false, result: parsed };
     } catch (err) {
       lastErr = err instanceof Error ? err.message : String(err);
