@@ -109,14 +109,14 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
         const hasRefs = referenceImages.length > 0
         const prompt = hasRefs
           ? [
-              `Mode EDIT FOTO: ubah foto referensi menjadi feed Instagram square di bawah ini.`,
+              `Mode EDIT FOTO: karya fotografi feed Instagram square yang KREATIF dan mengesankan dari foto produk di bawah ini.`,
               `ATURAN UTAMA: produk yang sama persis di foto referensi WAJIB tampil ULANG secara identik (bentuk, warna, kemasan, label/logo). DILARANG mengganti atau membuat produk lain.`,
-              `Yang boleh diubah: latar belakang, tata letak, pencahayaan, dan penataan feed agar menarik. Hanya boleh menambahkan teks jika konsep feed butuh, kecuali dilarang.`,
+              `BAGIAN KREATIF: bebas mengarang latar belakang, suasana, cerita, properti pendukung, warna, pencahayaan, dan komposisi yang spektakuler. Buat setiap feed terasa EKSKLUSIF dan layak di-post: bisa suasana premium, lifestyle yang hidup, tekstur mewah, atau adegan sinematik di sekitar produk. PENTING: semakin epik, menarik, dan penuh detail kreatif hasilnya, semakin bagus.`,
               `Tema feed: ${task.title}`,
               output?.title ? `Konsep/angle feed ini: ${output.title}` : '',
               output?.caption ? `Caption (untuk konteks produk): ${output.caption}` : '',
               result?.notes ? `Catatan: ${result.notes}` : '',
-              'Gaya: bersih, menarik, warna cerah, tanpa teks pada gambar.',
+              'Wajib akhir: gambar square, bersih, warna cerah/menarik, tanpa teks pada gambar.',
             ].filter(Boolean).join('\n')
           : [
               `Buat 1 gambar feed Instagram square profesional untuk brand Indonesia.`,
