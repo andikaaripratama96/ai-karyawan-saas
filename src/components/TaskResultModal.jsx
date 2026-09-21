@@ -105,12 +105,13 @@ export default function TaskResultModal({ task, employee, onClose, onUpdateTask,
       for (let i = 0; i < feedOutputs.length; i++) {
         const output = feedOutputs[i]
         const prompt = [
-          `Gambar feed Instagram square profesional untuk brand produk Indonesia.`,
-          `Tema: ${task.title}`,
-          output?.title ? `Judul: ${output.title}` : '',
-          output?.caption ? `Caption: ${output.caption}` : '',
+          `Buat 1 gambar feed Instagram square profesional untuk brand Indonesia.`,
+          `Brand/bisnis & detail produk: ${task.description || task.title}`,
+          `Tema feed: ${task.title}`,
+          output?.title ? `Konsep/angle feed ini: ${output.title}` : '',
+          output?.caption ? `Caption (untuk konteks produk): ${output.caption}` : '',
           result?.notes ? `Catatan: ${result.notes}` : '',
-          'Gaya: bersih, menarik, warna cerah, tanpa teks pada gambar.',
+          'Wajib: gambar harus mencerminkan produk/jasa DAN konsep di atas secara visual. Gaya: bersih, menarik, warna cerah, tanpa teks pada gambar.',
         ]
           .filter(Boolean)
           .join('\n')
